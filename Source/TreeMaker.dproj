@@ -99,9 +99,17 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="MainWindow.pas">
-            <Form>Form1</Form>
+            <Form>,
+  ComplementedCanvas in &apos;ComplementedCanvas.pas&apos;,
+  Database in &apos;Database.pas&apos;,
+  Vector in &apos;Vector.pas&apos;;
+
+{$R *.res</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="ComplementedCanvas.pas"/>
+        <DCCReference Include="Database.pas"/>
+        <DCCReference Include="Vector.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

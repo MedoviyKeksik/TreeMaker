@@ -1,0 +1,14 @@
+unit ComplementedCanvas;
+
+interface
+
+
+
+type
+  TCanvasPlus = class(TCanvas)
+
+  end;
+
+implementation
+
+end.

@@ -1,0 +1,12 @@
+unit ComplementedCanvas;
+
+interface
+
+type
+  CanvasPlus = class(Canvas)
+
+  end;
+
+implementation
+
+end.
