@@ -1,0 +1,99 @@
+object MainForm: TMainForm
+  Left = 640
+  Top = 395
+  Caption = 'TreeMaker'
+  ClientHeight = 473
+  ClientWidth = 992
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  Menu = Menu
+  OldCreateOrder = False
+  Position = poDesigned
+  OnCreate = FormCreate
+  OnPaint = FormPaint
+  PixelsPerInch = 96
+  TextHeight = 13
+  object Workspace: TImage
+    Left = 95
+    Top = 0
+    Width = 712
+    Height = 473
+    Align = alClient
+    OnMouseUp = WorkspaceMouseUp
+    ExplicitWidth = 762
+  end
+  object Toolbar: TPanel
+    Left = 0
+    Top = 0
+    Width = 95
+    Height = 473
+    Align = alLeft
+    AutoSize = True
+    BevelOuter = bvNone
+    TabOrder = 0
+    object Status: TLabel
+      Left = 13
+      Top = 424
+      Width = 72
+      Height = 33
+      Caption = 'Status'
+    end
+    object AddNodeRectangle: TButton
+      AlignWithMargins = True
+      Left = 10
+      Top = 20
+      Width = 75
+      Height = 25
+      Margins.Left = 10
+      Margins.Top = 10
+      Margins.Right = 10
+      Margins.Bottom = 10
+      Caption = 'Add Rectangle'
+      TabOrder = 0
+      OnClick = AddNodeRectangleClick
+    end
+  end
+  object Properties: TPanel
+    Left = 807
+    Top = 0
+    Width = 185
+    Height = 473
+    Align = alRight
+    TabOrder = 1
+    ExplicitLeft = 688
+    ExplicitTop = 48
+    ExplicitHeight = 41
+  end
+  object Menu: TMainMenu
+    Left = 752
+    Top = 368
+    object File1: TMenuItem
+      Caption = 'File'
+      object Open1: TMenuItem
+        Caption = 'Open'
+      end
+      object Save1: TMenuItem
+        Caption = 'Save'
+      end
+    end
+    object Edit1: TMenuItem
+      Caption = 'Edit'
+      object Undo1: TMenuItem
+        Caption = 'Undo'
+      end
+    end
+    object View1: TMenuItem
+      Caption = 'View'
+    end
+    object Help1: TMenuItem
+      Caption = 'Help'
+      object About1: TMenuItem
+        Caption = 'About'
+      end
+    end
+  end
+end

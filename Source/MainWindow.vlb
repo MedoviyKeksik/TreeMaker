@@ -10,9 +10,6 @@ EditingLayerName=NewLayer0
 [Menu]
 Coordinates=163,78,46,36
 
-[Solution]
-Coordinates=51,77,61,58
-
 [Toolbar]
 Coordinates=163,1,58,58
 
@@ -39,4 +36,7 @@ Coordinates=259,56,53,36
 
 [Help1]
 Coordinates=259,111,48,36
+
+[AddNodeRectangle]
+Coordinates=51,77,61,58
 
