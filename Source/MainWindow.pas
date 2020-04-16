@@ -11,29 +11,24 @@ uses
 type
   TMainForm = class(TForm)
     Menu: TMainMenu;
-    File1: TMenuItem;
-    Open1: TMenuItem;
-    Save1: TMenuItem;
-    Edit1: TMenuItem;
-    Help1: TMenuItem;
-    About1: TMenuItem;
-    Undo1: TMenuItem;
+    miFile: TMenuItem;
+    MiOpen: TMenuItem;
+    miSave: TMenuItem;
+    miEdit: TMenuItem;
+    miHelp: TMenuItem;
+    miAbout: TMenuItem;
+    miUndo: TMenuItem;
     Toolbar: TPanel;
     AddNodeRectangle: TButton;
     Status: TLabel;
     Workspace: TImage;
-    View1: TMenuItem;
+    miView: TMenuItem;
     Properties: TPanel;
     AddNodeEllipse: TButton;
     AddNodeCircle: TButton;
     AddLine: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormPaint(Sender: TObject);
-    procedure AddNodeRectangleClick(Sender: TObject);
-    procedure WorkspaceMouseUp(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure WorkspaceMouseMove(Sender: TObject; Shift: TShiftState; X,
-      Y: Integer);
   private
     { Private declarations }
   public
@@ -44,7 +39,6 @@ type
 
 var
   MainForm: TMainForm;
-  CurrentTool: TTools;
 
 implementation
 
@@ -54,44 +48,47 @@ uses
   Vector;
 
 procedure TMainForm.FormCreate(Sender: TObject);
+var
+  Element1, Element2: TElement;
+  Line: TLine;
 begin
-  arElements := TVector<TElement>.Create;
-  Workspace.Canvas.Brush.Color := clGreen;
+  // Some
+  Element1 := TElement.Create;
+  Element1.SetCanvas(Workspace.Canvas);
+  Element1.SetPosition(10, 10);
+  Element1.SetWidthHeigth(200, 100);
+  Element1.Text.Font.Size := 30;
+  Element1.Text.Caption := 'Cursa4';
+  Element1.Brush.Color := $c4c4c4;
+  Element1.Pen.Width := 5;
+
+
+  Element2 := TElement.Create;
+  Element2.SetCanvas(Workspace.Canvas);
+  Element2.SetPosition(200, 300);
+  Element2.SetWidthHeigth(200, 100);
+  Element2.Text.Font.Size := 30;
+  Element2.Text.Caption := 'Bored';
+  Element2.Brush.Color := $c4c4c4;
+  Element2.Pen.Width := 5;
+
+  Line := TLine.Create;
+  Line.SetCanvas(Workspace.Canvas);
+  Line.Start.BindToElement := True;
+  Line.Start.Element := Element1;
+  Line.Pen.Width := 3;
+  Line.Finish.BindToElement := True;
+  Line.Finish.Element := Element2;
+  Line.Text.Font.Size := 13;
+
+  Line.Draw;
+  Element1.Draw;
+  Element2.Draw;
 end;
 
 procedure TMainForm.FormPaint(Sender: TObject);
 begin
   ToolBar.Refresh;
-  ReDraw;
-end;
-
-procedure TMainForm.AddNodeRectangleClick(Sender: TObject);
-begin
-  CurrentTool := AddNode;
-end;
-
-procedure TMainForm.WorkspaceMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
-var
-  Template: TElement;
-begin
-  if ssLeft in Shift then
-  begin
-    Template := TElement.Create(X, Y, 200, 100, shRectangle);
-//    Draw(Template);
-    MainForm.Status.Caption := 'Drown an element at ' + IntToStr(X) + ' ' + IntToStr(Y);
-  end;
-
-end;
-
-procedure TMainForm.WorkspaceMouseUp(Sender: TObject; Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
-var
-  Template: TElement;
-begin
-  Template := TElement.Create(X, Y, 200, 50, shRectangle);
-  arElements.PushBack(Template);
-  Invalidate;
 end;
 
 initialization

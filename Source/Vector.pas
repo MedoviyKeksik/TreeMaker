@@ -6,12 +6,10 @@ type
   TVector<T> = class
   private type
     TDynArray = array of T;
-
   var
     DataSize: Integer;
     ReservedSize: Integer;
   public
-  var
     Data: TDynArray;
     constructor Create;
     destructor Destroy;
@@ -22,6 +20,7 @@ type
     procedure Clear;
     procedure Reserve(const X: Integer);
     procedure PushBack(const X: T);
+    procedure Erase(const Id: Integer);
   end;
 
 implementation
@@ -45,7 +44,6 @@ begin
   DataSize := 0;
   ReservedSize := 1;
   SetLength(Data, ReservedSize);
-  
 end;
 
 destructor TVector<T>.Destroy;
@@ -58,6 +56,15 @@ end;
 function TVector<T>.Empty: Boolean;
 begin
   Result := DataSize = 0;
+end;
+
+procedure TVector<T>.Erase(const Id: Integer);
+var
+  I: Integer;
+begin
+  Dec(DataSize);
+  for I := Id to DataSize - 1 do
+    Data[I] := Data[I + 1];
 end;
 
 function TVector<T>.Front: T;

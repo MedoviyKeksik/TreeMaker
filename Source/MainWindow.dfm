@@ -23,8 +23,6 @@ object MainForm: TMainForm
     Width = 778
     Height = 485
     Align = alClient
-    OnMouseMove = WorkspaceMouseMove
-    OnMouseUp = WorkspaceMouseUp
     ExplicitLeft = 366
     ExplicitTop = 98
     ExplicitWidth = 697
@@ -39,7 +37,6 @@ object MainForm: TMainForm
     Alignment = taLeftJustify
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitHeight = 473
     object Status: TLabel
       AlignWithMargins = True
       Left = 7
@@ -68,8 +65,6 @@ object MainForm: TMainForm
       Constraints.MaxHeight = 20
       Constraints.MaxWidth = 90
       TabOrder = 0
-      OnClick = AddNodeRectangleClick
-      ExplicitWidth = 20
     end
     object AddNodeEllipse: TButton
       AlignWithMargins = True
@@ -86,8 +81,6 @@ object MainForm: TMainForm
       Constraints.MaxHeight = 20
       Constraints.MaxWidth = 90
       TabOrder = 1
-      ExplicitTop = 10
-      ExplicitWidth = 20
     end
     object AddNodeCircle: TButton
       AlignWithMargins = True
@@ -104,8 +97,6 @@ object MainForm: TMainForm
       Constraints.MaxHeight = 20
       Constraints.MaxWidth = 90
       TabOrder = 2
-      ExplicitTop = 10
-      ExplicitWidth = 20
     end
     object AddLine: TButton
       AlignWithMargins = True
@@ -122,8 +113,6 @@ object MainForm: TMainForm
       Constraints.MaxHeight = 20
       Constraints.MaxWidth = 90
       TabOrder = 3
-      ExplicitTop = 10
-      ExplicitWidth = 20
     end
   end
   object Properties: TPanel
@@ -137,27 +126,27 @@ object MainForm: TMainForm
   object Menu: TMainMenu
     Left = 752
     Top = 368
-    object File1: TMenuItem
+    object miFile: TMenuItem
       Caption = 'File'
-      object Open1: TMenuItem
+      object MiOpen: TMenuItem
         Caption = 'Open'
       end
-      object Save1: TMenuItem
+      object miSave: TMenuItem
         Caption = 'Save'
       end
     end
-    object Edit1: TMenuItem
+    object miEdit: TMenuItem
       Caption = 'Edit'
-      object Undo1: TMenuItem
+      object miUndo: TMenuItem
         Caption = 'Undo'
       end
     end
-    object View1: TMenuItem
+    object miView: TMenuItem
       Caption = 'View'
     end
-    object Help1: TMenuItem
+    object miHelp: TMenuItem
       Caption = 'Help'
-      object About1: TMenuItem
+      object miAbout: TMenuItem
         Caption = 'About'
       end
     end
