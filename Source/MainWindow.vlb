@@ -1,5 +1,5 @@
 ﻿[]
-Coordinates=70,1,55,58
+Coordinates=111,78,67,36
 Visible=True
 
 [Module Settings]
@@ -10,33 +10,42 @@ EditingLayerName=NewLayer0
 [Menu]
 Coordinates=163,78,46,36
 
-[Toolbar]
-Coordinates=163,1,58,58
-
-[Status]
-Coordinates=0,0,51,58
-
-[AddNodeRectangle]
-Coordinates=51,77,61,58
-
 [miFile]
-Coordinates=36,173,43,36
+Coordinates=36,173,49,36
 
 [miUndo]
-Coordinates=144,173,52,36
+Coordinates=144,173,59,36
 
 [miEdit]
-Coordinates=163,133,44,36
+Coordinates=163,133,50,36
 
 [miHelp]
-Coordinates=259,111,48,36
+Coordinates=259,111,55,36
 
 [miAbout]
-Coordinates=85,173,55,36
+Coordinates=85,173,62,36
 
 [miSave]
-Coordinates=259,1,51,36
+Coordinates=259,1,57,36
 
 [MiOpen]
-Coordinates=259,56,53,36
+Coordinates=259,56,59,36
+
+[ToolbarPanel]
+Coordinates=10,78,91,58
+
+[miView]
+Coordinates=98,1,56,36
+
+[Properties]
+Coordinates=180,10,73,58
+
+[Workspace]
+Coordinates=91,10,79,58
+
+[(TMenuItem)]
+Coordinates=401,111,88,36
+
+[StatusBar]
+Coordinates=10,10,71,58
 

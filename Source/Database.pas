@@ -21,14 +21,14 @@ type
     destructor Destroy;
 
     procedure SetCanvas(const Canvas: TCanvas);
-
+    function IsInside(const X, Y: Integer): Boolean;
     procedure Draw;
 
   private
     Canvas: TCanvas;
   end;
 
-  TShapes = (shRectangle, shEllipse, shCirkle);
+  TShapes = (shRectangle, shEllipse, shCircle);
 
   TElement = class
   public
@@ -70,7 +70,7 @@ type
     destructor Destroy;
     procedure Move;
     procedure Draw;
-    function IsInside: Boolean;
+    function IsInside(const X, Y: Integer): Boolean;
     procedure SetCanvas(const Canvas: TCanvas);
   private
     Canvas: TCanvas;
@@ -123,13 +123,14 @@ begin
   Text.Top := StartPoint.Y;
   Text.Width := FinishPoint.X - StartPoint.X;
   Text.Heigth := FinishPoint.Y - StartPoint.Y;
-  Text.Font.Orientation := Trunc(-FinishPoint.Angle(StartPoint) * 180 / Pi * 10);
-  MainForm.Status.Caption := IntToStr(-Trunc(FinishPoint.Angle(StartPoint) * 180 / Pi * 10));
+//  Text.Font.Orientation := Trunc(-FinishPoint.Angle(StartPoint) * 180 / Pi * 10);
+//  MainForm.Status.Caption := IntToStr(-Trunc(FinishPoint.Angle(StartPoint) * 180 / Pi * 10));
   Text.Draw;
 end;
 
-function TLine.IsInside: Boolean;
+function TLine.IsInside(const X, Y: Integer): Boolean;
 begin
+  Result := False;
 
 end;
 
@@ -170,6 +171,11 @@ begin
   Canvas.TextRect(Rect, Caption, TextFormat);
 end;
 
+function TText.IsInside(const X, Y: Integer): Boolean;
+begin
+  Result := (X >= Left) and (Y >= Top) and (X <= Left + Width) and (Y <= Top + Heigth);
+end;
+
 procedure TText.SetCanvas(const Canvas: TCanvas);
 begin
   Self.Canvas := Canvas;
@@ -198,7 +204,11 @@ begin
   Canvas.Brush := Brush;
   // TEMP SOLUTION
   Text.Brush := Brush;
-  Canvas.Rectangle(Left, Top, Left + Width, Top + Heigth);
+  case Shape of
+    shRectangle: Canvas.Rectangle(Left, Top, Left + Width, Top + Heigth);
+    shEllipse: Canvas.Ellipse(Left, Top, Left + Width, Top + Heigth);
+    shCircle: Canvas.Ellipse(Left, Top, Left + Width, Top + Heigth);
+  end;
   Text.Draw;
 end;
 
