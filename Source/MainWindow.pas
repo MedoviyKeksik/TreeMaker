@@ -7,10 +7,13 @@ uses
   System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.Menus, Vcl.ExtCtrls, Vcl.StdCtrls,
   Database, Vcl.ToolWin, Vcl.ComCtrls, System.Actions, Vcl.ActnList,
-  Vcl.StdActns, System.ImageList, Vcl.ImgList, Vector;
+  Vcl.StdActns, System.ImageList, Vcl.ImgList, Vector, Vcl.ActnMan,
+  Vcl.ActnColorMaps;
 
 type
-  TTools = (Mouse, Rectangle, Ellipse, Circle, Line, Text);
+  TTools = (toolMouse, toolRectangle, toolEllipse, toolCircle, toolLine, toolText);
+
+  TPanels = (tplNone, tplRectangle, tplEllipse, tplCircle, tplLine, tplText);
 
   TMainForm = class(TForm)
     Menu: TMainMenu;
@@ -22,11 +25,9 @@ type
     miAbout: TMenuItem;
     miUndo: TMenuItem;
     ToolbarPanel: TPanel;
-    Workspace: TImage;
     miView: TMenuItem;
     Properties: TPanel;
     StatusBar: TStatusBar;
-    WorkSpacePanel: TPanel;
     ImageList: TImageList;
     ActionList: TActionList;
     FileOpen: TFileOpen;
@@ -51,23 +52,51 @@ type
     tlCircle: TToolButton;
     tlText: TToolButton;
     tlLine: TToolButton;
+    MainProperties: TPanel;
+    lblPosition: TLabel;
+    edtX: TEdit;
+    lblX: TLabel;
+    lblY: TLabel;
+    edtY: TEdit;
+    ScrollBox: TScrollBox;
+    Workspace: TImage;
+    WorkSpacePanel: TPanel;
+    ScrollBoxProperties: TScrollBox;
+    lblWidth: TLabel;
+    edtWidth: TEdit;
+    lblHeigth: TLabel;
+    edtHeigth: TEdit;
+    TextProperties: TPanel;
+    FontDialog: TFontDialog;
+    lblFont: TLabel;
+    btnFont: TButton;
+    BorderPanel: TPanel;
+    lblBorder: TLabel;
+    lblColor: TLabel;
+    lblBorderWidth: TLabel;
+    ColorDialog: TColorDialog;
+    BackGroundPanel: TPanel;
+    lblBackground: TLabel;
+    btnBackgroundColor: TButton;
+    lblBackgroundColor: TLabel;
     procedure FormCreate(Sender: TObject);
-    procedure FormPaint(Sender: TObject);
-    procedure tlMouseClick(Sender: TObject);
-    procedure tlRectangleClick(Sender: TObject);
-    procedure WorkspaceMouseMove(Sender: TObject; Shift: TShiftState; X,
-      Y: Integer);
+    procedure toolButtonClick(Sender: TObject);
+    procedure WorkspaceMouseMove(Sender: TObject; Shift: TShiftState;
+      X, Y: Integer);
     procedure WorkspaceMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure tlEllipseClick(Sender: TObject);
-    procedure tlCircleClick(Sender: TObject);
-    procedure tlLineClick(Sender: TObject);
+    procedure WorkspaceMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure EditSelectAllExecute(Sender: TObject);
   private
     CurrentTool: TTools;
+    CurrentPanel: TPanels;
+    StartPoint, FinishPoint, Delta: TPoint;
+    IsSelectedClickedElement: Boolean;
     Elements: TVector<TElement>;
     Texts: TVector<TText>;
     Lines: TVector<TLine>;
-    function IsClicked(const X, Y: Integer): Boolean;
+    function IsClickedAll(const X, Y: Integer): Boolean;
     function IsClickedElements(const X, Y: Integer): Boolean;
     function IsClickedLines(const X, Y: Integer): Boolean;
     function IsClickedTexts(const X, Y: Integer): Boolean;
@@ -76,7 +105,11 @@ type
     procedure AddEllipse(const X, Y: Integer);
     procedure AddCircle(const X, Y: Integer);
     procedure AddText(const X, Y: Integer);
-    { Private declarations }
+    procedure SelectAll;
+    procedure DeselectAll;
+    procedure ReDraw;
+    procedure ShowPanel;
+    procedure ClearWorkspace;
   public
     { Public declarations }
   end;
@@ -88,14 +121,25 @@ implementation
 
 {$R *.dfm}
 
+procedure ElementOnMove(Sender: TObject; const X, Y: Integer);
+var
+  Tmp: TElement;
+begin
+  Tmp := TElement.Create(Sender as TElement);
+  Tmp.SetPosition(Tmp.Left + X, Tmp.Top + Y);
+  Tmp.Draw;
+  Tmp.Free;
+end;
+
 procedure TMainForm.AddCircle(const X, Y: Integer);
 var
   Element: TElement;
 begin
+  DeselectAll;
   Element := TElement.Create;
-  Element.Shape := shCircle;
+  Element.Shape := stCircle;
   SetDefaultsElement(Element);
-  Element.SetWidthHeigth(100, 100);
+  Element.SetSize(100, 100);
   Element.SetPosition(X - Element.Width shr 1, Y - Element.Heigth shr 1);
   Element.Draw;
   Elements.PushBack(Element);
@@ -105,8 +149,9 @@ procedure TMainForm.AddEllipse(const X, Y: Integer);
 var
   Element: TElement;
 begin
+  DeselectAll;
   Element := TElement.Create;
-  Element.Shape := shEllipse;
+  Element.Shape := stEllipse;
   SetDefaultsElement(Element);
   Element.SetPosition(X - Element.Width shr 1, Y - Element.Heigth shr 1);
   Element.Draw;
@@ -117,74 +162,84 @@ procedure TMainForm.AddRectangle(const X, Y: Integer);
 var
   Element: TElement;
 begin
+  DeselectAll;
   StatusBar.Panels[0].Text := 'Element Created';
   Element := TElement.Create;
-  Element.Shape := shRectangle;
+  Element.Shape := stRectangle;
   SetDefaultsElement(Element);
   Element.SetPosition(X - Element.Width shr 1, Y - Element.Heigth shr 1);
   Element.Draw;
   Elements.PushBack(Element);
 end;
 
-procedure TMainForm.AddText(const X, Y: Integer);
+procedure TMainForm.SetDefaultsElement(Element: TElement);
 begin
+  Element.Canvas := Workspace.Canvas;
+  Element.SetSize(200, 100);
+  Element.Font.Size := 10;
+  Element.Caption := 'Cursa4';
+  Element.Brush.Color := $C4C4C4;
+  Element.Pen.Width := 2;
+  Element.Selected := True;
+  Element.OnMove := ElementOnMove;
+end;
 
+procedure TMainForm.AddText(const X, Y: Integer);
+var
+  Tmp: TText;
+begin
+  Tmp := TText.Create;
+  Tmp.SetPosition(X, Y);
+  Tmp.SetSize(200, 100);
+  Tmp.Canvas := Workspace.Canvas;
+  StatusBar.Panels[0].Text := 'Called AddTEXT';
+  Tmp.Caption := 'Some text';
+  Texts.PushBack(Tmp);
+end;
+
+procedure TMainForm.ClearWorkspace;
+begin
+  Workspace.Canvas.Brush.Style := bsSolid;
+  Workspace.Canvas.Brush.Color := clWhite;
+  Workspace.Canvas.FillRect(TRect.Create(0, 0, Workspace.Width,
+    Workspace.Height));
+end;
+
+procedure TMainForm.DeselectAll;
+var
+  I: Integer;
+begin
+  for I := 0 to Elements.Size - 1 do
+    Elements.At[I].Selected := False;
+  for I := 0 to Lines.Size - 1 do
+    Lines.At[I].Selected := False;
+  for I := 0 to Texts.Size - 1 do
+    Texts.At[I].Selected := False;
+end;
+
+procedure TMainForm.EditSelectAllExecute(Sender: TObject);
+begin
+  SelectAll;
+  ClearWorkspace;
+  ReDraw;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
-var
-  Element1, Element2: TElement;
-  Line: TLine;
 begin
-  CurrentTool := Mouse;
+  CurrentTool := toolMouse;
+  CurrentPanel := tplNone;
+  ShowPanel;
   Elements := TVector<TElement>.Create;
   Texts := TVector<TText>.Create;
   Lines := TVector<TLine>.Create;
-
-  // Some
-//  Element1 := TElement.Create;
-//  Element1.SetCanvas(Workspace.Canvas);
-//  Element1.SetPosition(10, 10);
-//  Element1.SetWidthHeigth(200, 100);
-//  Element1.Text.Font.Size := 30;
-//  Element1.Text.Caption := 'Cursa4';
-//  Element1.Brush.Color := $c4c4c4;
-//  Element1.Pen.Width := 5;
-//
-//
-//  Element2 := TElement.Create;
-//  Element2.SetCanvas(Workspace.Canvas);
-//  Element2.SetPosition(200, 300);
-//  Element2.SetWidthHeigth(200, 100);
-//  Element2.Text.Font.Size := 17;
-//  Element2.Text.Caption := 'Полина, ты супер';
-//  Element2.Brush.Color := $c4c4c4;
-//  Element2.Pen.Width := 5;
-//
-//  Line := TLine.Create;
-//  Line.SetCanvas(Workspace.Canvas);
-//  Line.Start.BindToElement := True;
-//  Line.Start.Element := Element1;
-//  Line.Pen.Width := 3;
-//  Line.Finish.BindToElement := True;
-//  Line.Finish.Element := Element2;
-//  Line.Text.Font.Size := 13;
-//
-//  Line.Draw;
-//  Element1.Draw;
-//  Element2.Draw;
+  ClearWorkspace;
 end;
 
-procedure TMainForm.FormPaint(Sender: TObject);
-begin
-//  Refresh
 
-//  ToolBarPanel.Refresh;
-end;
-
-function TMainForm.IsClicked(const X, Y: Integer): Boolean;
+function TMainForm.IsClickedAll(const X, Y: Integer): Boolean;
 begin
-  Result := IsClickedLines(X, Y) or IsClickedTexts(X, Y) or IsClickedElements(X, Y);
+  Result := IsClickedLines(X, Y) or IsClickedTexts(X, Y) or
+    IsClickedElements(X, Y);
 end;
 
 function TMainForm.IsClickedElements(const X, Y: Integer): Boolean;
@@ -193,7 +248,7 @@ var
 begin
   Result := False;
   for I := 0 to Elements.Size - 1 do
-    if Elements.Data[i].IsInside(X, Y) then
+    if Elements.At[I].IsInside(X, Y) then
     begin
       Result := True;
       Break;
@@ -206,7 +261,7 @@ var
 begin
   Result := False;
   for I := 0 to Lines.Size - 1 do
-    if Lines.Data[I].IsInside(X, Y) then
+    if Lines.At[I].IsInside(X, Y) then
     begin
       Result := True;
       Break;
@@ -219,63 +274,158 @@ var
 begin
   Result := False;
   for I := 0 to Texts.Size - 1 do
-    if Texts.Data[i].IsInside(X, Y) then
+    if Texts.At[I].IsInside(X, Y) then
     begin
       Result := True;
       Break;
     end;
 end;
 
-procedure TMainForm.SetDefaultsElement(Element: TElement);
+procedure TMainForm.ReDraw;
+var
+  I: Integer;
 begin
-  Element.SetCanvas(Workspace.Canvas);
-  Element.SetWidthHeigth(200, 100);
-  Element.Text.Font.Size := 10;
-  Element.Text.Caption := 'Cursa4';
-  Element.Brush.Color := $c4c4c4;
-  Element.Pen.Width := 2;
+  for I := 0 to Lines.Size - 1 do
+    Lines.At[I].Draw;
+  for I := 0 to Elements.Size - 1 do
+    Elements.At[I].Draw;
+  for I := 0 to Texts.Size - 1 do
+    Texts.At[I].Draw;
 end;
 
-procedure TMainForm.tlCircleClick(Sender: TObject);
+procedure TMainForm.SelectAll;
+var
+  I: Integer;
 begin
-  CurrentTool := Circle;
+  for I := 0 to Elements.Size - 1 do
+    Elements.At[I].Selected := True;;
+  for I := 0 to Lines.Size - 1 do
+    Lines.At[I].Selected := True;
+  for I := 0 to Texts.Size - 1 do
+    Texts.At[I].Selected := True;
 end;
 
-procedure TMainForm.tlEllipseClick(Sender: TObject);
+procedure TMainForm.ShowPanel;
 begin
-  CurrentTool := Ellipse;
+  MainProperties.Visible := False;
+  case CurrentPanel of
+    tplNone:
+      Properties.Visible := False;
+    tplRectangle:
+      begin
+        Properties.Visible := True;
+        MainProperties.Visible := True;
+      end;
+    tplEllipse:
+      begin
+      end;
+    tplCircle:
+      begin
+      end;
+    tplLine:
+      begin
+      end;
+    tplText:
+      begin
+      end;
+  end;
 end;
 
-procedure TMainForm.tlLineClick(Sender: TObject);
+procedure TMainForm.toolButtonClick(Sender: TObject);
 begin
-  CurrentTool := Line;
+  CurrentTool := TTools((Sender as TToolButton).Tag);
 end;
 
-procedure TMainForm.tlMouseClick(Sender: TObject);
+procedure TMainForm.WorkspaceMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+var
+  I: Integer;
 begin
-  CurrentTool := Mouse;
+
+  if Button = mbLeft then
+  begin
+    StartPoint.Create(X, Y);
+    for I := Elements.Size - 1 downto 0 do
+    begin
+      if Elements.At[I].IsInside(X, Y) then
+      begin
+        IsSelectedClickedElement := Elements.At[I].Selected;
+        Elements.At[I].Selected := True;
+        Break;
+      end;
+    end;
+  end;
+  ClearWorkspace;
+  ReDraw;
 end;
 
-procedure TMainForm.tlRectangleClick(Sender: TObject);
+procedure TMainForm.WorkspaceMouseMove(Sender: TObject; Shift: TShiftState;
+  X, Y: Integer);
+var
+  I: Integer;
 begin
-  CurrentTool := Rectangle;
-end;
-
-procedure TMainForm.WorkspaceMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: Integer);
-begin
-   StatusBar.Panels[1].Text := 'X: ' + IntToStr(X) + ' Y: ' + IntToStr(Y);
+  StatusBar.Panels[1].Text := 'X: ' + IntToStr(X) + ' Y: ' + IntToStr(Y);
+  if (CurrentTool = toolMouse) and (ssLeft in Shift) then
+  begin
+    ClearWorkspace;
+    ReDraw;
+    for I := Elements.Size - 1 downto 0 do
+    begin
+      if Elements.At[I].Selected then
+        Elements.At[I].OnMove(Elements.At[I], X - StartPoint.X,
+          Y - StartPoint.Y);
+    end;
+  end;
 end;
 
 procedure TMainForm.WorkspaceMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
+var
+  I: Integer;
+  IsAny: Boolean;
 begin
   case CurrentTool of
-    Mouse: ;
-    Rectangle: AddRectangle(X, Y);
-    Ellipse: AddEllipse(X, Y);
-    Circle: AddCircle(X, Y);
+    toolMouse:
+      begin
+        if (Button = mbLeft) then
+        begin
+          if (StartPoint.X = X) and (StartPoint.Y = Y) then
+          begin
+            IsAny := False;
+            if not (ssCtrl in Shift) then 
+              DeselectAll;
+            for I := Elements.Size - 1 downto 0 do
+            begin
+              if Elements.At[I].IsInside(X, Y) then
+              begin
+                IsAny := True;
+                Elements.At[I].Selected := not Elements.At[I].Selected;
+                Break;
+              end;
+            end;
+            if (ssCtrl in Shift) and (not IsAny) then
+              DeselectAll;
+          end
+          else 
+          begin
+            for I := Elements.Size - 1 downto 0 do
+              if Elements.At[I].Selected then
+                Elements.At[I].Move(X - StartPoint.X, Y - StartPoint.Y);
+          end;
+        end;
+      end;
+    toolRectangle:
+      AddRectangle(X, Y);
+    toolEllipse:
+      AddEllipse(X, Y);
+    toolCircle:
+      AddCircle(X, Y);
+    toolText:
+      AddText(X, Y);
   end;
+
+  ClearWorkspace;
+  ReDraw;
 end;
 
 initialization

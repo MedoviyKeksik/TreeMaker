@@ -107,7 +107,6 @@
 {$R *.res</Form>
             <FormType>dfm</FormType>
         </DCCReference>
-        <DCCReference Include="ComplementedCanvas.pas"/>
         <DCCReference Include="Database.pas"/>
         <DCCReference Include="Vector.pas"/>
         <BuildConfiguration Include="Release">

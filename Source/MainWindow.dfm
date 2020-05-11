@@ -14,7 +14,6 @@ object MainForm: TMainForm
   OldCreateOrder = False
   Position = poDesigned
   OnCreate = FormCreate
-  OnPaint = FormPaint
   PixelsPerInch = 96
   TextHeight = 13
   object Properties: TPanel
@@ -24,7 +23,198 @@ object MainForm: TMainForm
     Height = 466
     Align = alRight
     TabOrder = 0
-    ExplicitHeight = 485
+    object ScrollBoxProperties: TScrollBox
+      Left = 1
+      Top = 1
+      Width = 157
+      Height = 464
+      Align = alClient
+      TabOrder = 0
+      object MainProperties: TPanel
+        Left = 0
+        Top = 0
+        Width = 153
+        Height = 127
+        Align = alTop
+        TabOrder = 0
+        object lblPosition: TLabel
+          Left = 16
+          Top = 17
+          Width = 56
+          Height = 16
+          Alignment = taCenter
+          Caption = 'Position:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+        end
+        object lblX: TLabel
+          Left = 16
+          Top = 39
+          Width = 10
+          Height = 13
+          Caption = 'X:'
+        end
+        object lblY: TLabel
+          Left = 88
+          Top = 39
+          Width = 10
+          Height = 13
+          Caption = 'Y:'
+        end
+        object lblWidth: TLabel
+          Left = 16
+          Top = 66
+          Width = 32
+          Height = 13
+          Caption = 'Width:'
+        end
+        object lblHeigth: TLabel
+          Left = 16
+          Top = 94
+          Width = 35
+          Height = 13
+          Caption = 'Heigth:'
+        end
+        object edtX: TEdit
+          Left = 32
+          Top = 36
+          Width = 33
+          Height = 21
+          NumbersOnly = True
+          TabOrder = 0
+        end
+        object edtY: TEdit
+          Left = 104
+          Top = 36
+          Width = 33
+          Height = 21
+          NumbersOnly = True
+          TabOrder = 1
+        end
+        object edtHeigth: TEdit
+          Left = 56
+          Top = 91
+          Width = 43
+          Height = 21
+          NumbersOnly = True
+          TabOrder = 2
+        end
+        object edtWidth: TEdit
+          Left = 56
+          Top = 63
+          Width = 43
+          Height = 21
+          NumbersOnly = True
+          TabOrder = 3
+        end
+      end
+      object TextProperties: TPanel
+        Left = 0
+        Top = 265
+        Width = 153
+        Height = 64
+        Align = alTop
+        TabOrder = 1
+        object lblFont: TLabel
+          Left = 58
+          Top = 6
+          Width = 33
+          Height = 16
+          Caption = 'Font:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+        end
+        object btnFont: TButton
+          Left = 38
+          Top = 28
+          Width = 75
+          Height = 25
+          Caption = 'Change'
+          TabOrder = 0
+        end
+      end
+      object BorderPanel: TPanel
+        Left = 0
+        Top = 191
+        Width = 153
+        Height = 74
+        Align = alTop
+        TabOrder = 2
+        object lblBorder: TLabel
+          Left = 16
+          Top = 10
+          Width = 49
+          Height = 16
+          Alignment = taCenter
+          Caption = 'Border:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+        end
+        object lblColor: TLabel
+          Left = 16
+          Top = 48
+          Width = 29
+          Height = 13
+          Caption = 'Color:'
+        end
+        object lblBorderWidth: TLabel
+          Left = 16
+          Top = 29
+          Width = 32
+          Height = 13
+          Caption = 'Width:'
+        end
+      end
+      object BackGroundPanel: TPanel
+        Left = 0
+        Top = 127
+        Width = 153
+        Height = 64
+        Align = alTop
+        TabOrder = 3
+        object lblBackground: TLabel
+          Left = 3
+          Top = 6
+          Width = 81
+          Height = 16
+          Alignment = taCenter
+          Caption = 'Background:'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -13
+          Font.Name = 'Tahoma'
+          Font.Style = [fsBold]
+          ParentFont = False
+        end
+        object lblBackgroundColor: TLabel
+          Left = 19
+          Top = 33
+          Width = 29
+          Height = 13
+          Caption = 'Color:'
+        end
+        object btnBackgroundColor: TButton
+          Left = 59
+          Top = 28
+          Width = 75
+          Height = 25
+          Caption = 'Change'
+          TabOrder = 0
+        end
+      end
+    end
   end
   object StatusBar: TStatusBar
     Left = 0
@@ -40,28 +230,6 @@ object MainForm: TMainForm
         Text = 'X: Y:'
         Width = 50
       end>
-    ExplicitLeft = -8
-    ExplicitTop = 434
-  end
-  object WorkSpacePanel: TPanel
-    Left = 61
-    Top = 0
-    Width = 811
-    Height = 466
-    Align = alClient
-    TabOrder = 2
-    ExplicitLeft = 224
-    ExplicitTop = 8
-    ExplicitWidth = 185
-    ExplicitHeight = 41
-    object Workspace: TImage
-      Left = 30
-      Top = 24
-      Width = 699
-      Height = 413
-      OnMouseMove = WorkspaceMouseMove
-      OnMouseUp = WorkspaceMouseUp
-    end
   end
   object ToolbarPanel: TPanel
     Left = 0
@@ -72,7 +240,7 @@ object MainForm: TMainForm
     Alignment = taLeftJustify
     AutoSize = True
     BevelOuter = bvNone
-    TabOrder = 3
+    TabOrder = 2
     object ToolBar: TToolBar
       AlignWithMargins = True
       Left = 3
@@ -97,9 +265,10 @@ object MainForm: TMainForm
         ImageIndex = 0
         Wrap = True
         Style = tbsCheck
-        OnClick = tlMouseClick
+        OnClick = toolButtonClick
       end
       object tlRectangle: TToolButton
+        Tag = 1
         Left = 0
         Top = 36
         Caption = 'Rectangle'
@@ -107,9 +276,10 @@ object MainForm: TMainForm
         ImageIndex = 1
         Wrap = True
         Style = tbsCheck
-        OnClick = tlRectangleClick
+        OnClick = toolButtonClick
       end
       object tlEllipse: TToolButton
+        Tag = 2
         Left = 0
         Top = 72
         Caption = 'Ellipse'
@@ -117,9 +287,10 @@ object MainForm: TMainForm
         ImageIndex = 2
         Wrap = True
         Style = tbsCheck
-        OnClick = tlEllipseClick
+        OnClick = toolButtonClick
       end
       object tlCircle: TToolButton
+        Tag = 3
         Left = 0
         Top = 108
         Caption = 'Circle'
@@ -127,9 +298,10 @@ object MainForm: TMainForm
         ImageIndex = 3
         Wrap = True
         Style = tbsCheck
-        OnClick = tlCircleClick
+        OnClick = toolButtonClick
       end
       object tlLine: TToolButton
+        Tag = 4
         Left = 0
         Top = 144
         Caption = 'Line'
@@ -137,20 +309,55 @@ object MainForm: TMainForm
         ImageIndex = 5
         Wrap = True
         Style = tbsCheck
-        OnClick = tlLineClick
+        OnClick = toolButtonClick
       end
       object tlText: TToolButton
+        Tag = 5
         Left = 0
         Top = 180
         Caption = 'Text'
+        Grouped = True
         ImageIndex = 4
+        Style = tbsCheck
+        OnClick = toolButtonClick
+      end
+    end
+  end
+  object ScrollBox: TScrollBox
+    Left = 61
+    Top = 0
+    Width = 811
+    Height = 466
+    Align = alClient
+    TabOrder = 3
+    object WorkSpacePanel: TPanel
+      Left = 0
+      Top = 0
+      Width = 700
+      Height = 940
+      AutoSize = True
+      BevelOuter = bvNone
+      TabOrder = 0
+      object Workspace: TImage
+        AlignWithMargins = True
+        Left = 50
+        Top = 50
+        Width = 600
+        Height = 840
+        Margins.Left = 50
+        Margins.Top = 50
+        Margins.Right = 50
+        Margins.Bottom = 50
+        OnMouseDown = WorkspaceMouseDown
+        OnMouseMove = WorkspaceMouseMove
+        OnMouseUp = WorkspaceMouseUp
       end
     end
   end
   object Menu: TMainMenu
     Images = ImageList
     Left = 504
-    Top = 320
+    Top = 328
     object miFile: TMenuItem
       Caption = 'File'
       object MiOpen: TMenuItem
@@ -198,12 +405,12 @@ object MainForm: TMainForm
   end
   object ImageList: TImageList
     Left = 616
-    Top = 320
+    Top = 328
   end
   object ActionList: TActionList
     Images = ImageList
-    Left = 552
-    Top = 320
+    Left = 560
+    Top = 328
     object FileOpen: TFileOpen
       Category = 'File'
       Caption = '&Open...'
@@ -237,6 +444,7 @@ object MainForm: TMainForm
       Caption = 'Select &All'
       Hint = 'Select All|Selects the entire document'
       ShortCut = 16449
+      OnExecute = EditSelectAllExecute
     end
     object EditUndo: TEditUndo
       Category = 'Edit'
@@ -264,5 +472,18 @@ object MainForm: TMainForm
       Hint = 'Exit|Quits the application'
       ImageIndex = 43
     end
+  end
+  object FontDialog: TFontDialog
+    Font.Charset = RUSSIAN_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -13
+    Font.Name = 'Tahoma'
+    Font.Style = [fsStrikeOut]
+    Left = 352
+    Top = 296
+  end
+  object ColorDialog: TColorDialog
+    Left = 360
+    Top = 336
   end
 end

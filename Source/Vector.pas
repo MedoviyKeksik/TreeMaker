@@ -4,23 +4,30 @@ interface
 
 type
   TVector<T> = class
-  private type
-    TDynArray = array of T;
-  var
-    DataSize: Integer;
-    ReservedSize: Integer;
+  private
+    FData: array of T;
+    FDataSize: Integer;
+    FReservedSize: Integer;
+
+    function ReadAt(const Ind: Integer): T;
+    procedure WriteAt(const Ind: Integer; const Value: T);
+
   public
-    Data: TDynArray;
     constructor Create;
     destructor Destroy;
+
     function Front: T;
     function Back: T;
+    procedure Erase(const Id: Integer);
+
+    procedure PushBack(const X: T);
+
     function Size: Integer;
     function Empty: Boolean;
+
     procedure Clear;
     procedure Reserve(const X: Integer);
-    procedure PushBack(const X: T);
-    procedure Erase(const Id: Integer);
+    property At[const Index: Integer]: T read ReadAt write WriteAt;
   end;
 
 implementation
@@ -29,69 +36,79 @@ implementation
 
 function TVector<T>.Back: T;
 begin
-  Result := Data[DataSize - 1];
+  Result := FData[FDataSize - 1];
 end;
 
 procedure TVector<T>.Clear;
 begin
-  DataSize := 0;
-  ReservedSize := 1;
-  SetLength(Data, ReservedSize);
+  FDataSize := 0;
+  FReservedSize := 1;
+  SetLength(FData, FReservedSize);
 end;
 
 constructor TVector<T>.Create;
 begin
-  DataSize := 0;
-  ReservedSize := 1;
-  SetLength(Data, ReservedSize);
+  FDataSize := 0;
+  FReservedSize := 1;
+  SetLength(FData, FReservedSize);
 end;
 
 destructor TVector<T>.Destroy;
 begin
-  ReservedSize := 0;
-  SetLength(Data, ReservedSize);
+  FReservedSize := 0;
+  SetLength(FData, FReservedSize);
   inherited;
 end;
 
 function TVector<T>.Empty: Boolean;
 begin
-  Result := DataSize = 0;
+  Result := FDataSize = 0;
 end;
 
 procedure TVector<T>.Erase(const Id: Integer);
 var
   I: Integer;
 begin
-  Dec(DataSize);
-  for I := Id to DataSize - 1 do
-    Data[I] := Data[I + 1];
+  Dec(FDataSize);
+  for I := Id to FDataSize - 1 do
+    FData[I] := FData[I + 1];
 end;
 
 function TVector<T>.Front: T;
 begin
-  Result := Data[0];
+  Result := FData[0];
 end;
 
 procedure TVector<T>.PushBack(const X: T);
 begin
-  if DataSize = ReservedSize then
+  if FDataSize = FReservedSize then
   begin
-    ReservedSize := ReservedSize shl 1;
-    SetLength(Data, ReservedSize);
+    FReservedSize := FReservedSize shl 1;
+    SetLength(FData, FReservedSize);
   end;
-  Data[DataSize] := X;
-  Inc(DataSize);
+  FData[FDataSize] := X;
+  Inc(FDataSize);
+end;
+
+function TVector<T>.ReadAt(const Ind: Integer): T;
+begin
+  Result := FData[Ind];
 end;
 
 procedure TVector<T>.Reserve(const X: Integer);
 begin
-  ReservedSize := X;
-  SetLength(Data, ReservedSize);
+  FReservedSize := X;
+  SetLength(FData, FReservedSize);
 end;
 
 function TVector<T>.Size: Integer;
 begin
-  Result := DataSize;
+  Result := FDataSize;
+end;
+
+procedure TVector<T>.WriteAt(const Ind: Integer; const Value: T);
+begin
+  FData[Ind] := Value;
 end;
 
 end.

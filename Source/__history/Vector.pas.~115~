@@ -1,0 +1,95 @@
+unit Vector;
+
+interface
+
+type
+  TVector<T> = class
+  private
+    FData: array of T;
+    DataSize: Integer;
+    FReservedSize: Integer;
+  public
+    constructor Create;
+    destructor Destroy;
+    function Front: T;
+    function Back: T;
+    function Size: Integer;
+    function Empty: Boolean;
+    procedure Clear;
+    procedure Reserve(const X: Integer);
+    procedure PushBack(const X: T);
+    procedure Erase(const Id: Integer);
+  end;
+
+implementation
+
+{ TVector<T> }
+
+function TVector<T>.Back: T;
+begin
+  Result := FData[DataSize - 1];
+end;
+
+procedure TVector<T>.Clear;
+begin
+  DataSize := 0;
+  FReservedSize := 1;
+  SetLength(FData, FReservedSize);
+end;
+
+constructor TVector<T>.Create;
+begin
+  DataSize := 0;
+  FReservedSize := 1;
+  SetLength(FData, FReservedSize);
+end;
+
+destructor TVector<T>.Destroy;
+begin
+  FReservedSize := 0;
+  SetLength(FData, FReservedSize);
+  inherited;
+end;
+
+function TVector<T>.Empty: Boolean;
+begin
+  Result := DataSize = 0;
+end;
+
+procedure TVector<T>.Erase(const Id: Integer);
+var
+  I: Integer;
+begin
+  Dec(DataSize);
+  for I := Id to DataSize - 1 do
+    FData[I] := FData[I + 1];
+end;
+
+function TVector<T>.Front: T;
+begin
+  Result := FData[0];
+end;
+
+procedure TVector<T>.PushBack(const X: T);
+begin
+  if DataSize = FReservedSize then
+  begin
+    FReservedSize := FReservedSize shl 1;
+    SetLength(FData, FReservedSize);
+  end;
+  FData[DataSize] := X;
+  Inc(DataSize);
+end;
+
+procedure TVector<T>.Reserve(const X: Integer);
+begin
+  FReservedSize := X;
+  SetLength(FData, FReservedSize);
+end;
+
+function TVector<T>.Size: Integer;
+begin
+  Result := DataSize;
+end;
+
+end.

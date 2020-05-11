@@ -3,7 +3,6 @@ program TreeMaker;
 uses
   Vcl.Forms,
   MainWindow in 'MainWindow.pas',
-  ComplementedCanvas in 'ComplementedCanvas.pas',
   Database in 'Database.pas',
   Vector in 'Vector.pas';
 
@@ -12,6 +11,7 @@ uses
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
+  Application.Icon := Nil;
   Application.CreateForm(TMainForm, MainForm);
   Application.Run;
 end.
