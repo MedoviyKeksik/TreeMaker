@@ -6,6 +6,7 @@ uses
   Vcl.Graphics,
   Vcl.ExtCtrls,
   System.Types,
+  System.Classes,
   SysUtils;
 
 type
@@ -28,6 +29,8 @@ type
     procedure Move(const DeltaX, DeltaY: Integer);
     procedure SetSize(const AWidth, AHeigth: Integer);
     procedure DrawControls;
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
     property Left: Integer read FLeft;
     property Top: Integer read FTop;
     property Width: Integer read FWidth;
@@ -37,7 +40,7 @@ type
     property Canvas: TCanvas read FCanvas write SetCanvas;
     property Visible: Boolean read FIsVisible write FIsVisible;
     property Selected: Boolean read FIsSelected write FIsSelected;
-    property Id: Integer read FId;
+    property Id: Integer read FId write FId;
     function GetCenter: TPoint;
   end;
 
@@ -75,6 +78,9 @@ type
     function IsInside(const X, Y: Integer): Boolean;
     procedure Draw;
 
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
+
     property Brush: TBrush read FBrush write FBrush;
     property Caption: String read FCaption write FCaption;
     property Font: TFont read FFont write FFont;
@@ -84,6 +90,7 @@ type
   end;
 
   TConnector = record
+    procedure OffBind;
     case BindToElement: Boolean of
       True:
         (Element: TElement);
@@ -93,13 +100,14 @@ type
 
   TLine = class
   private
-    FStart, FFinish: TConnector;
+
     FText: TText;
     FIsSelected: Boolean;
     FPen: TPen;
     FCanvas: TCanvas;
     procedure SetCanvas(const ACanvas: TCanvas);
   public
+    FStart, FFinish: TConnector;
     constructor Create;
     destructor Destroy;
 
@@ -111,6 +119,9 @@ type
     property Selected: Boolean read FIsSelected write FIsSelected;
     property Pen: TPen read FPen write FPen;
     property Canvas: TCanvas read FCanvas write SetCanvas;
+
+    property Start: TConnector read FStart write FStart;
+    property Finish: TConnector read FFinish write FFinish;
   end;
 
 implementation
@@ -298,7 +309,7 @@ function TElement.IsInside(const X, Y: Integer): Boolean;
     if (a2 = 0) or (b2 = 0) then
       Result := False
     else
-      Result := (Sqr(X) / Sqr(a2) + Sqr(Y) / Sqr(b2)) <= 2.0;
+      Result := (Sqr(X) / Sqr(a2) + Sqr(Y) / Sqr(b2)) <= 0.25;
   end;
 
 begin
@@ -309,8 +320,111 @@ begin
     // stRoundRect: ;
     // stRoundSquare: ;
     stEllipse, stCircle:
-      Result := IsInEllipse(X - FLeft, Y - FTop, FWidth, FHeigth);
+    Result := IsInEllipse(X - FLeft - (FWidth shr 1), Y - FTop - (FHeigth shr 1), FWidth, FHeigth);
   end;
+end;
+
+procedure TElement.ReadFromFileStream(FileStream: TFileStream);
+var
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+  FontStyle: TFontStyles;
+  FontSize: Integer;
+  Orientation: Integer;
+  CaptionSize: Integer;
+  CharSize: ^SmallInt;
+begin
+  Inherited;
+  FileStream.Read(FShape, SizeOf(FShape));
+
+  FileStream.Read(CaptionSize, SizeOf(CaptionSize));
+  SetLength(FCaption, CaptionSize);
+  FileStream.Read(Pointer(FCaption)^, CaptionSize * 2);
+  FileStream.Read(FTextFormat, SizeOf(FTextFormat));
+
+  FileStream.Read(Color, SizeOf(Color));
+  FBrush.Color := Color;
+
+  FileStream.Read(BrushStyle, SizeOf(BrushStyle));
+  FBrush.Style := BrushStyle;
+
+  FileStream.Read(Color, SizeOf(Color));
+  FPen.Color := Color;
+
+  FileStream.Read(PenWidth, SizeOf(PenWidth));
+  FPen.Width := PenWidth;
+
+  FileStream.Read(PenStyle, SizeOf(PenStyle));
+  FPen.Style := PenStyle;
+
+  FileStream.Read(PenMode, SizeOf(PenMode));
+  FPen.Mode := PenMode;
+
+  FileStream.Read(FontStyle, SizeOf(FontStyle));
+  FFont.Style := FontStyle;
+
+  FileStream.Read(FontSize, SizeOf(FontSize));
+  FFont.Size := FontSize;
+
+  FileStream.Read(Color, SizeOf(Color));
+  FFont.Color := Color;
+
+  FileStream.Read(Orientation, SizeOf(Orientation));
+  FFont.Orientation := Orientation;
+end;
+
+procedure TElement.WriteToFileStream(FileStream: TFileStream);
+var
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+  FontStyle: TFontStyles;
+  FontSize: Integer;
+  Orientation: Integer;
+  CaptionLength: Integer;
+begin
+  Inherited;
+  FileStream.Write(FShape, SizeOf(FShape));
+
+  CaptionLength := Length(FCaption);
+  FileStream.Write(CaptionLength, SizeOf(CaptionLength));
+  FileStream.Write(Pointer(FCaption)^, CaptionLength * 2);
+  FileStream.Write(FTextFormat, SizeOf(FTextFormat));
+
+  Color := FBrush.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  BrushStyle := Brush.Style;
+  FileStream.Write(BrushStyle, SizeOf(BrushStyle));
+
+  Color := FPen.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  PenWidth := FPen.Width;
+  FileStream.Write(PenWidth, SizeOf(PenWidth));
+
+  PenStyle := FPen.Style;
+  FileStream.Write(PenStyle, SizeOf(PenStyle));
+
+  PenMode := FPen.Mode;
+  FileStream.Write(PenMode, SizeOf(PenMode));
+
+  FontStyle := FFont.Style;
+  FileStream.Write(FontStyle, SizeOf(FontStyle));
+
+  FontSize := FFont.Size;
+  FileStream.Write(FontSize, SizeOf(FontSize));
+
+  Color := FFont.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  Orientation := FFont.Orientation;
+  FileStream.Write(Orientation, SizeOf(Orientation));
 end;
 
 { TControlObject }
@@ -381,6 +495,15 @@ begin
   Inc(FTop, DeltaY);
 end;
 
+procedure TControlObject.ReadFromFileStream(FileStream: TFileStream);
+begin
+  FileStream.Read(FId, SizeOf(Fid));
+  FileStream.Read(FLeft, SizeOf(FLeft));
+  FileStream.Read(FTop, SizeOf(FTop));
+  FileStream.Read(FWidth, SizeOf(FWidth));
+  FileStream.Read(FHeigth, SizeOf(Fheigth));
+end;
+
 procedure TControlObject.SetCanvas(ACanvas: TCanvas);
 begin
   Self.FCanvas := ACanvas;
@@ -396,6 +519,26 @@ procedure TControlObject.SetSize(const AWidth, AHeigth: Integer);
 begin
   FWidth := AWidth;
   FHeigth := AHeigth;
+end;
+
+procedure TControlObject.WriteToFileStream(FileStream: TFileStream);
+begin
+  FileStream.Write(FId, SizeOf(Fid));
+  FileStream.Write(FLeft, SizeOf(FLeft));
+  FileStream.Write(FTop, SizeOf(FTop));
+  FileStream.Write(FWidth, SizeOf(FWidth));
+  FileStream.Write(FHeigth, SizeOf(Fheigth));
+end;
+
+{ TConnector }
+
+procedure TConnector.OffBind;
+begin
+  if BindToElement then
+  begin
+    BindToElement := False;
+    Pos := Element.GetCenter;
+  end;
 end;
 
 initialization

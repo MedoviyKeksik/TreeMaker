@@ -1,0 +1,87 @@
+object formResolution: TformResolution
+  Left = 0
+  Top = 0
+  BorderIcons = [biSystemMenu]
+  BorderStyle = bsSingle
+  Caption = 'Resolution'
+  ClientHeight = 140
+  ClientWidth = 245
+  Color = clBtnFace
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
+  OldCreateOrder = False
+  Position = poOwnerFormCenter
+  PixelsPerInch = 96
+  TextHeight = 13
+  object lblHeader: TLabel
+    Left = 8
+    Top = 8
+    Width = 80
+    Height = 18
+    Caption = 'Resolution'
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -15
+    Font.Name = 'Tahoma'
+    Font.Style = [fsBold]
+    ParentFont = False
+  end
+  object lblWidth: TLabel
+    Left = 24
+    Top = 47
+    Width = 28
+    Height = 13
+    Caption = 'Width'
+  end
+  object lblHeigth: TLabel
+    Left = 24
+    Top = 75
+    Width = 31
+    Height = 13
+    Caption = 'Heigth'
+  end
+  object spinWidth: TSpinEdit
+    Left = 112
+    Top = 44
+    Width = 121
+    Height = 22
+    MaxValue = 0
+    MinValue = 0
+    TabOrder = 0
+    Value = 0
+  end
+  object spinHeigth: TSpinEdit
+    Left = 112
+    Top = 72
+    Width = 121
+    Height = 22
+    MaxValue = 0
+    MinValue = 0
+    TabOrder = 1
+    Value = 0
+    OnChange = spinHeigthChange
+  end
+  object btnOk: TButton
+    Left = 24
+    Top = 107
+    Width = 81
+    Height = 25
+    Caption = 'Ok'
+    Default = True
+    TabOrder = 2
+    OnClick = btnOkClick
+  end
+  object btnCancel: TButton
+    Left = 136
+    Top = 107
+    Width = 81
+    Height = 25
+    Cancel = True
+    Caption = 'Cancel'
+    TabOrder = 3
+    OnClick = btnCancelClick
+  end
+end

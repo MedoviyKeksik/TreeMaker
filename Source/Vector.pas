@@ -97,6 +97,7 @@ end;
 
 procedure TVector<T>.Reserve(const X: Integer);
 begin
+  FDataSize := X;
   FReservedSize := X;
   SetLength(FData, FReservedSize);
 end;
