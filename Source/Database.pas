@@ -160,6 +160,10 @@ begin
   end;
   FCanvas.MoveTo(StartPoint.X, StartPoint.Y);
   FCanvas.Pen := FPen;
+  if FIsSelected then
+  begin
+    FCanvas.Pen.Color := clBlue;
+  end;
   case FFinish.BindToElement of
     True:
       FinishPoint := FFinish.Element.GetCenter;
@@ -175,9 +179,25 @@ begin
 end;
 
 function TLine.IsInside(const X, Y: Integer): Boolean;
+const
+  threshold = 10;
+var
+  A, B, C: Integer;
+  P, Q: TPoint;
+  tmp: Real;
 begin
-  Result := False;
+  if FStart.BindToElement then P := FStart.Element.GetCenter
+  else P := FStart.Pos;
 
+  if FFinish.BindToElement then Q := FFinish.Element.GetCenter
+  else Q := FFinish.Pos;
+
+  A := P.Y - Q.Y;
+  B := Q.X - P.X;
+  C := -A * P.X - B * P.Y;
+
+  if (A = 0) and (B = 0) then Result := False
+  else Result := Abs(A * X + B * Y + C) / Sqrt(Sqr(A) + Sqr(B)) < threshold;
 end;
 
 procedure TLine.SetCanvas(const ACanvas: TCanvas);
@@ -221,6 +241,12 @@ begin
   FCanvas.Font := FFont;
   FCanvas.Brush := FBrush;
   FCanvas.TextRect(Rect, FCaption, FTextFormat);
+  if FIsSelected then
+  begin
+    FCanvas.Brush.Style := bsClear;
+    FCanvas.Pen.Color := clBlue;
+    FCanvas.Rectangle(Rect);
+  end;
 end;
 
 function TText.IsInside(const X, Y: Integer): Boolean;

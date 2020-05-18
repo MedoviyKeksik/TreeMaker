@@ -10,6 +10,13 @@ uses
   Vcl.StdActns, System.ImageList, Vcl.ImgList, Vector, Vcl.ActnMan,
   Vcl.ActnColorMaps, Vcl.Samples.Spin;
 
+const
+  ST_ALL_OK = 0;
+  ST_DIFF_VALUES = 1;
+  ST_UNDEFINED = 2;
+  ST_ERROR = 3;
+  ST_UPDATING = 4;
+
 type
   TTools = (toolMouse, toolRectangle, toolEllipse, toolCircle, toolLine,
     toolText);
@@ -88,6 +95,8 @@ type
     miResolution: TMenuItem;
     ImageResolution: TAction;
     tlText: TToolButton;
+    btnBorderColor: TButton;
+    spinBorderWidth: TSpinEdit;
     procedure FormCreate(Sender: TObject);
     procedure toolButtonClick(Sender: TObject);
     procedure WorkspaceMouseMove(Sender: TObject; Shift: TShiftState;
@@ -102,6 +111,11 @@ type
     procedure ImageResolutionExecute(Sender: TObject);
     procedure FileSaveAsAccept(Sender: TObject);
     procedure FileOpenAccept(Sender: TObject);
+    procedure edtTextChange(Sender: TObject);
+    procedure btnBackgroundColorClick(Sender: TObject);
+    procedure btnFontClick(Sender: TObject);
+    procedure btnBorderColorClick(Sender: TObject);
+    procedure HelpAboutExecute(Sender: TObject);
   private
     FFileName: TFileName;
 
@@ -111,8 +125,8 @@ type
     ElementTmp: TElement;
     LineTmp: TLine;
     SelectionState: Boolean;
+
     CurrentTool: TTools;
-    CurrentPanel: TPanels;
     StartPoint, FinishPoint, Delta: TPoint;
 
     Elements: TVector<TElement>;
@@ -157,7 +171,7 @@ implementation
 uses
   uModalResolution,
   Vcl.Imaging.jpeg,
-  Vcl.Imaging.pngimage;
+  Vcl.Imaging.pngimage, uAbout;
 
 procedure ElementOnMove(Sender: TObject; const X, Y: Integer);
 var
@@ -226,13 +240,114 @@ procedure TMainForm.AddText(const X, Y: Integer);
 var
   Tmp: TText;
 begin
+  DeselectAll;
   Tmp := TText.Create;
-  Tmp.SetPosition(X, Y);
+  Tmp.Selected := True;
   Tmp.SetSize(200, 100);
+  Tmp.SetPosition(X - Tmp.Width shr 1, Y - Tmp.Heigth shr 1);
   Tmp.Canvas := Workspace.Canvas;
   StatusBar.Panels[0].Text := 'Called AddTEXT';
   Tmp.Caption := 'Some text';
   Texts.PushBack(Tmp);
+end;
+
+procedure TMainForm.btnBackgroundColorClick(Sender: TObject);
+var
+  I: Integer;
+  TmpColor: TColor;
+  State: Integer;
+begin
+  if ColorDialog.Execute then
+  begin
+    for I := 0 to Elements.Size - 1 do
+      with Elements.At[I] do
+        if Selected then
+          Brush.Color := ColorDialog.Color;
+    ClearWorkspace;
+    ReDraw;
+  end;
+end;
+
+procedure TMainForm.btnBorderColorClick(Sender: TObject);
+var
+  I: Integer;
+begin
+  if ColorDialog.Execute then
+  begin
+    for I := 0 to Elements.Size - 1 do
+      with Elements.At[I] do
+        if Selected then
+          Pen.Color := ColorDialog.Color;
+
+    for I := 0 to Lines.Size - 1 do
+      with Lines.At[I] do
+        if Selected then
+          Pen.Color := ColorDialog.Color;
+  end;
+end;
+
+procedure TMainForm.btnFontClick(Sender: TObject);
+var
+  I: Integer;
+  TmpFont: TFont;
+  State: Integer;
+begin
+  State := ST_UNDEFINED;
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        if State = ST_UNDEFINED then
+           TmpFont := Font
+        else if not TmpFont.Equals(Font) then
+        begin
+          State := ST_DIFF_VALUES;
+          Break;
+        end;
+
+  if State <> ST_DIFF_VALUES then
+    for I := 0 to Texts.Size - 1 do
+      with Texts.At[I] do
+        if State = ST_UNDEFINED then
+           TmpFont := Font
+        else if not TmpFont.Equals(Font) then
+        begin
+          State := ST_DIFF_VALUES;
+          Break;
+        end;
+
+  if State <> ST_DIFF_VALUES then
+    for I := 0 to Lines.Size - 1 do
+      with Lines.At[I] do
+        if State = ST_UNDEFINED then
+           TmpFont := Font
+        else if not TmpFont.Equals(Font) then
+        begin
+          State := ST_DIFF_VALUES;
+          Break;
+        end;
+
+  if Assigned(TmpFont) then
+    FontDialog.Font.Assign(TmpFont);
+
+  if FontDialog.Execute then
+  begin
+    for I := 0 to Elements.Size - 1 do
+      with Elements.At[I] do
+        if Selected then
+          Font.Assign(FontDialog.Font);
+
+    for I := 0 to Texts.Size - 1 do
+      with Texts.At[I] do
+        if Selected then
+          Font.Assign(FontDialog.Font);
+
+    for I := 0 to Lines.Size - 1 do
+      with Lines.At[I] do
+        if Selected then
+          Font.Assign(FontDialog.Font);
+    ClearWorkspace;
+    ReDraw;
+  end;
 end;
 
 procedure TMainForm.ClearMainPropertiesPanel;
@@ -319,6 +434,35 @@ end;
 procedure TMainForm.EditSelectAllExecute(Sender: TObject);
 begin
   SelectAll;
+  ClearWorkspace;
+  ReDraw;
+end;
+
+procedure TMainForm.edtTextChange(Sender: TObject);
+var
+  Tmp: TEdit;
+  I: Integer;
+begin
+  Tmp := Sender as TEdit;
+  if Tmp.Tag and ST_UPDATING > 0 then
+    exit;
+  if Tmp.Tag = ST_ERROR then
+    exit;
+
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        Caption := Tmp.Text;
+
+  for I := 0 to Texts.Size - 1 do
+    with Texts.At[I] do
+      if Selected then
+        Caption := Tmp.Text;
+
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        Caption := Tmp.Text;
   ClearWorkspace;
   ReDraw;
 end;
@@ -474,15 +618,17 @@ procedure TMainForm.FillMainPropertiesPanel(const X, Y, Width, Heigth: Integer);
 
   procedure UpdateSpin(Spin: TSpinEdit; Value: Integer);
   begin
-    if (Spin.Tag and 1 = 1) or (Spin.Value = Value) then
+    if Spin.Tag = ST_DIFF_VALUES or ST_UPDATING then exit;
+    if Spin.Tag = ST_ERROR or ST_UPDATING then exit;
+    if (Spin.Tag = ST_UNDEFINED or ST_UPDATING) then
     begin
       Spin.Value := Value;
-      Spin.Tag := 0;
+      Spin.Tag := ST_ALL_OK or ST_UPDATING;
     end
-    else
+    else if (Spin.Value <> Value) then
     begin
-      Spin.Tag := Spin.Tag or 2;
-      Spin.Value := -1;
+      Spin.Tag := ST_DIFF_VALUES or ST_UPDATING;
+      Spin.Value := 0;
     end;
   end;
 
@@ -495,13 +641,23 @@ end;
 
 procedure TMainForm.FillTextPanel(const Text: String);
 begin
-  edtText.Text := Text;
+  if edtText.Tag = ST_ERROR or ST_UPDATING then exit;
+  if edtText.Tag = ST_DIFF_VALUES  or ST_UPDATING then exit;
+  if (edtText.Tag and ST_UNDEFINED > 0) or (edtText.Text = Text) then
+  begin
+    edtText.Text := Text;
+    edtText.Tag := ST_ALL_OK or ST_UPDATING;
+  end
+  else
+  begin
+    edtText.Tag := ST_DIFF_VALUES or ST_UPDATING;
+    edtText.Text := '';
+  end;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   CurrentTool := toolMouse;
-  CurrentPanel := tplNone;
   Elements := TVector<TElement>.Create;
   Texts := TVector<TText>.Create;
   Lines := TVector<TLine>.Create;
@@ -514,6 +670,11 @@ begin
 
   ClearWorkspace;
   ShowPanel;
+end;
+
+procedure TMainForm.HelpAboutExecute(Sender: TObject);
+begin
+  frmAbout.Show;
 end;
 
 procedure TMainForm.ImageResolutionExecute(Sender: TObject);
@@ -601,62 +762,116 @@ end;
 
 procedure TMainForm.ShowPanel;
 
-  procedure UpdateSpin(spin: TSpinEdit);
+  procedure UpdateTWinControl(Sender: TWinControl);
   begin
-    if spin.Tag and 1 = 1 then spin.Value := 0;
-    spin.Tag := spin.Tag and $FFFFFFFD;
+    Sender.Tag := Sender.Tag xor ST_UPDATING;
+    Sender.Enabled := Sender.Tag <> ST_ERROR;
   end;
 
   procedure UpdateSpins;
   begin
-    UpdateSpin(spinX);
-    UpdateSpin(spinY);
-    UpdateSpin(spinWidth);
-    UpdateSpin(spinHeigth);
+    UpdateTWinControl(spinX);
+    UpdateTWinControl(spinY);
+    UpdateTWinControl(spinWidth);
+    UpdateTWinControl(spinHeigth);
   end;
 
 var
   I: Integer;
 begin
-  spinX.Tag := 1;
-  spinY.Tag := 1;;
-  spinWidth.Tag := 1;
-  spinHeigth.Tag := 1;
+  // UPDATE SPINS
+  spinX.Tag := ST_UNDEFINED or ST_UPDATING;
+  spinY.Tag := ST_UNDEFINED or ST_UPDATING;
+  spinWidth.Tag := ST_UNDEFINED or ST_UPDATING;
+  spinHeigth.Tag := ST_UNDEFINED or ST_UPDATING;
   for I := 0 to Elements.Size - 1 do
-  begin
-    if Elements.At[I].Selected then
-      with Elements.At[I] do
+    with Elements.At[I] do
+      if Selected then
         FillMainPropertiesPanel(Left, Top, Width, Heigth);
-  end;
+  for I := 0 to Texts.Size - 1 do
+    with Texts.At[I] do
+      if Selected then
+        FillMainPropertiesPanel(Left, Top, Width, Heigth);
+  for I := 0 to Lines.Size - 1 do
+    if Lines.At[I].Selected then
+    begin
+      spinX.Tag :=  ST_ERROR or ST_UPDATING;
+      spinY.Tag :=  ST_ERROR or ST_UPDATING;
+      spinWidth.Tag :=  ST_ERROR or ST_UPDATING;
+      spinHeigth.Tag :=  ST_ERROR or ST_UPDATING;
+    end;
   UpdateSpins;
+
+  // UPDATE TEXT
+  edtText.Tag := ST_UNDEFINED or ST_UPDATING;
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        FillTextPanel(Caption);
+  for I := 0 to Texts.Size - 1 do
+    with Texts.At[I] do
+      if Selected then
+        FillTextPanel(Caption);
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        FillTextPanel(Caption);
+  UpdateTWinControl(edtText);
 end;
 
 procedure TMainForm.spinMainPropertiesChange(Sender: TObject);
 var
   I: Integer;
+  Tmp: TSpinEdit;
 begin
-  if (Sender as TSpinEdit).Tag > 0 then
+  if (Sender as TSpinEdit).Tag and ST_UPDATING > 0 then
     exit;
-  for I := 0 to Elements.Size - 1 do
-    if Elements.At[I].Selected then
-      with Elements.At[I] do
-      begin
-        if spinX.Tag and 1 <> 1 then
+  if (Sender as TSpinEdit).Tag = ST_ERROR then
+    exit;
+
+  Tmp := Sender as TSpinEdit;
+  if Tmp.Name = spinX.Name then                 // spinX
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
           SetPosition(spinX.Value, Top);
-        if spinY.Tag and 1 <> 1 then
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+          SetPosition(spinX.Value, Top);
+  end else if Tmp.Name = spinY.Name then        // spinY
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
           SetPosition(Left, spinY.Value);
-        if spinwidth.Tag and 1 <> 1 then
-          SetSize(spinwidth.Value, Heigth);
-        if spinHeigth.Value and 1 <> 1 then
-          SetSize(Width, spinHeigth.Value);
-      end;
-  for I := 0 to Texts.Size - 1 do
-    if Texts.At[I].Selected then
-      with Texts.At[I] do
-      begin
-        SetPosition(spinX.Value, spinY.Value);
-        SetSize(spinwidth.Value, spinHeigth.Value);
-      end;
+
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+          SetPosition(Left, spinY.Value);
+  end else if Tmp.Name = spinWidth.Name then    // spinWidth
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
+            SetSize(spinWidth.Value, Heigth);
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+            SetSize(spinWidth.Value, Heigth);
+  end else if Tmp.Name = spinHeigth.Name then   // spinHeigth
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
+            SetSize(Width, spinHeigth.Value);
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+            SetSize(Width, spinHeigth.Value);
+  end;
   ClearWorkspace;
   ReDraw;
 end;
@@ -780,7 +995,6 @@ procedure TMainForm.WorkspaceMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
   I: Integer;
-  LineTmp: TLine;
 begin
   case CurrentTool of
     toolMouse:
@@ -841,7 +1055,6 @@ begin
           LineTmp.FFinish.BindToElement := False;
           LineTmp.FFinish.Pos.Create(X, Y);
         end;
-        LineTmp.Draw;
         Lines.PushBack(LineTmp);
       end;
 
