@@ -116,6 +116,7 @@ type
     procedure btnFontClick(Sender: TObject);
     procedure btnBorderColorClick(Sender: TObject);
     procedure HelpAboutExecute(Sender: TObject);
+    procedure spinBorderWidthChange(Sender: TObject);
   private
     FFileName: TFileName;
 
@@ -124,6 +125,7 @@ type
     TextTmp: TText;
     ElementTmp: TElement;
     LineTmp: TLine;
+    ConnectorTmp: ^TConnector;
     SelectionState: Boolean;
 
     CurrentTool: TTools;
@@ -156,6 +158,7 @@ type
     procedure ClearMainPropertiesPanel;
     procedure FillMainPropertiesPanel(const X, Y, Width, Heigth: Integer);
     procedure FillTextPanel(const Text: String);
+    procedure FillBorderPanel(const Value: Integer);
     procedure UpdateResolution;
   public
     { Public declarations }
@@ -178,6 +181,16 @@ var
   Tmp: TElement;
 begin
   Tmp := TElement.Create(Sender as TElement);
+  Tmp.SetPosition(Tmp.Left + X, Tmp.Top + Y);
+  Tmp.Draw;
+  Tmp.Free;
+end;
+
+procedure TextOnMove(Sender: TObject; const X, Y: Integer);
+var
+  Tmp: TText;
+begin
+  Tmp := TText.Create(Sender as TText);
   Tmp.SetPosition(Tmp.Left + X, Tmp.Top + Y);
   Tmp.Draw;
   Tmp.Free;
@@ -462,7 +475,7 @@ begin
   for I := 0 to Lines.Size - 1 do
     with Lines.At[I] do
       if Selected then
-        Caption := Tmp.Text;
+        Text.Caption := Tmp.Text;
   ClearWorkspace;
   ReDraw;
 end;
@@ -500,6 +513,14 @@ procedure TMainForm.FileOpenAccept(Sender: TObject);
   end;
 
   procedure OpenTMF(const FileName: TFileName);
+
+    function ElementToInt(Element: TElement): Integer;
+    var
+      A: Integer absolute Element;
+    begin
+      Result := A;
+    end;
+
   var
     fsFile: TFileStream;
     N, PredSize, I: Integer;
@@ -521,13 +542,37 @@ procedure TMainForm.FileOpenAccept(Sender: TObject);
       Elements.At[I].Canvas := Workspace.Canvas;
     end;
     for I := 0 to N - 1 do
-    begin
       Elements.At[I].ReadFromFileStream(fsFile);
-    end;
 
     // Lines
-
+    fsFile.Read(N, SizeOF(N));
+    PredSize := Lines.Size;
+    Lines.Reserve(N);
+    for I := PredSize to N - 1 do
+    begin
+      Lines.At[I] := TLine.Create;
+      Lines.At[I].Canvas := Workspace.Canvas;
+    end;
+    for I := 0 to N - 1 do
+      with Lines.At[I] do
+      begin
+        ReadFromFileStream(fsFile);
+        if Start.BindToElement then
+          FStart.Element := Elements.At[ElementToInt(Start.Element)];
+        if Finish.BindToElement then
+          FFinish.Element := Elements.At[ElementToInt(Finish.Element)];
+      end;
     // Texts
+    fsFile.Read(N, SizeOf(N));
+    PredSize := Texts.Size;
+    Texts.Reserve(N);
+    for I := PredSize to N - 1 do
+    begin
+      Texts.At[I] := TText.Create;
+      Texts.At[I].Canvas := Workspace.Canvas;
+    end;
+    for I := 0 to N - 1 do
+      Texts.At[I].ReadFromFileStream(fsFile);
 
     fsFile.Free;
   end;
@@ -592,8 +637,16 @@ procedure TMainForm.FileSaveAsAccept(Sender: TObject);
     end;
 
     // Lines
+    N := Lines.Size;
+    fsFile.Write(N, SizeOf(N));
+    for I := 0 to Lines.Size - 1 do
+      Lines.At[I].WriteToFileStream(fsFile);
 
     // Texts
+    N := Texts.Size;
+    fsFile.Write(N, SizeOf(N));
+    for I := 0 to Texts.Size - 1 do
+      Texts.At[I].WriteToFileStream(fsFile);
 
     fsFile.Free;
   end;
@@ -612,6 +665,22 @@ begin
     4:
       SaveTMF(ExtendWithExt(SaveDialog.FileName, '.tmf'));
   end;
+end;
+
+procedure TMainForm.FillBorderPanel(const Value: Integer);
+begin
+  if spinBorderWidth.Tag = ST_DIFF_VALUES or ST_UPDATING then Exit;
+  if spinBorderWidth.Tag = ST_ERROR or ST_UPDATING then exit;
+    if (spinBorderWidth.Tag = ST_UNDEFINED or ST_UPDATING) then
+    begin
+      spinBorderWidth.Value := Value;
+      spinBorderWidth.Tag := ST_ALL_OK or ST_UPDATING;
+    end
+    else if (spinBorderWidth.Value <> Value) then
+    begin
+      spinBorderWidth.Tag := ST_DIFF_VALUES or ST_UPDATING;
+      spinBorderWidth.Value := 0;
+    end;
 end;
 
 procedure TMainForm.FillMainPropertiesPanel(const X, Y, Width, Heigth: Integer);
@@ -741,11 +810,15 @@ var
   I: Integer;
 begin
   for I := 0 to Lines.Size - 1 do
-    Lines.At[I].Draw;
+    if not Lines.At[I].Selected then
+      Lines.At[I].Draw;
   for I := 0 to Elements.Size - 1 do
     Elements.At[I].Draw;
   for I := 0 to Texts.Size - 1 do
     Texts.At[I].Draw;
+  for I := 0 to Lines.Size - 1 do
+    if Lines.At[I].Selected then
+      Lines.At[I].Draw;
 end;
 
 procedure TMainForm.SelectAll;
@@ -817,6 +890,41 @@ begin
       if Selected then
         FillTextPanel(Caption);
   UpdateTWinControl(edtText);
+
+  spinBorderWidth.Tag := ST_UNDEFINED or ST_UPDATING;
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        FillBorderPanel(Pen.Width);
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        FillBorderPanel(Pen.Width);
+  UpdateTWinControl(spinBorderWidth);
+end;
+
+procedure TMainForm.spinBorderWidthChange(Sender: TObject);
+var
+  I: Integer;
+  Tmp: TSpinEdit;
+begin
+  tmp := Sender as TSpinEdit;
+  if tmp.Tag and ST_UPDATING > 0 then
+    Exit;
+  if tmp.Tag = ST_ERROR then
+    Exit;
+
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        Pen.Width := tmp.Value;
+
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        Pen.Width := tmp.Value;
+  ClearWorkspace;
+  Redraw;
 end;
 
 procedure TMainForm.spinMainPropertiesChange(Sender: TObject);
@@ -825,9 +933,9 @@ var
   Tmp: TSpinEdit;
 begin
   if (Sender as TSpinEdit).Tag and ST_UPDATING > 0 then
-    exit;
+    Exit;
   if (Sender as TSpinEdit).Tag = ST_ERROR then
-    exit;
+    Exit;
 
   Tmp := Sender as TSpinEdit;
   if Tmp.Name = spinX.Name then                 // spinX
@@ -891,10 +999,17 @@ begin
   ReDraw;
 end;
 
+function GetPoint(Sender: TConnector): TPoint;
+begin
+  if Sender.BindToElement then Result := Sender.Element.GetCenter
+  else Result := Sender.Pos;
+end;
+
 procedure TMainForm.WorkspaceMouseDown(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
   I: Integer;
+  StP, FnP: TPoint;
 begin
   case CurrentTool of
     toolMouse:
@@ -902,6 +1017,7 @@ begin
         ElementTmp := IsClickedElements(X, Y);
         LineTmp := IsClickedLines(X, Y);
         TextTmp := IsClickedTexts(X, Y);
+        ConnectorTmp := nil;
         if (Button = mbLeft) then
         begin
           StartPoint.Create(X, Y);
@@ -928,6 +1044,15 @@ begin
           end
           else if Assigned(LineTmp) then
           begin
+            StP := GetPoint(LineTmp.Start);
+            FnP := GetPoint(LineTmp.Finish);
+            if (Abs(X - StP.X) < 6 + LineTmp.Pen.Width) and (Abs(Y - StP.Y) < 6 + LineTmp.Pen.Width) then
+              ConnectorTmp := @LineTmp.Start
+            else if (Abs(X - FnP.X) < 6 + LineTmp.Pen.Width) and (Abs(Y - FnP.Y) < 6 + LineTmp.Pen.Width) then
+              ConnectorTmp := @LineTmp.Finish
+            else ConnectorTmp := nil;
+            if Assigned(ConnectorTmp) then
+              DeselectAll;
             LineTmp.Selected := True;
           end
           else if Assigned(TextTmp) then
@@ -967,14 +1092,31 @@ begin
   case CurrentTool of
     toolMouse:
       begin
-        if ssLeft in Shift then
+        if (ssLeft in Shift) and not Assigned(ConnectorTmp) then
         begin
           ClearWorkspace;
           ReDraw;
-          for I := Elements.Size - 1 downto 0 do
+        end;
+        if ssLeft in Shift then
+        begin
+          if Assigned(ConnectorTmp) then
           begin
-            if Elements.At[I].Selected then
-              ElementOnMove(Elements.At[I], X - StartPoint.X, Y - StartPoint.Y);
+            ConnectorTmp^.Pos.Create(X, Y);
+            ClearWorkspace;
+            ReDraw;
+          end
+          else
+          begin
+            for I := Elements.Size - 1 downto 0 do
+            begin
+              if Elements.At[I].Selected then
+                ElementOnMove(Elements.At[I], X - StartPoint.X, Y - StartPoint.Y);
+            end;
+            for I := Texts.Size - 1 downto 0 do
+            begin
+              if Texts.At[I].Selected then
+                TextOnMove(Texts.At[I], X - StartPoint.X, Y - StartPoint.Y);
+            end;
           end;
         end;
       end;
@@ -1014,9 +1156,29 @@ begin
           end
           else
           begin
-            for I := Elements.Size - 1 downto 0 do
-              if Elements.At[I].Selected then
-                Elements.At[I].Move(X - StartPoint.X, Y - StartPoint.Y);
+            if Assigned(ConnectorTmp) then
+            begin
+              ElementTmp := IsClickedElements(X, Y);
+              if Assigned(ElementTmp) and not (ssAlt in Shift) then
+              begin
+                ConnectorTmp^.BindToElement := True;
+                ConnectorTmp^.Element := ElementTmp;
+              end
+              else
+              begin
+                ConnectorTmp^.BindToElement := False;
+                ConnectorTmp^.Pos.Create(X, Y);
+              end;
+            end
+            else
+            begin
+              for I := Elements.Size - 1 downto 0 do
+                if Elements.At[I].Selected then
+                  Elements.At[I].Move(X - StartPoint.X, Y - StartPoint.Y);
+              for I := Texts.Size - 1 downto 0 do
+                if Texts.At[I].Selected then
+                  Texts.At[I].Move(X - StartPoint.X, Y - StartPoint.Y);
+            end;
           end;
         end;
       end;

@@ -10,7 +10,8 @@ uses
 {$R *.res},
   Database in 'Database.pas',
   Vector in 'Vector.pas',
-  uModalResolution in 'uModalResolution.pas' {formResolution};
+  uModalResolution in 'uModalResolution.pas' {formResolution},
+  uAbout in 'uAbout.pas' {frmAbout};
 
 {$R *.res}
 
@@ -20,5 +21,6 @@ begin
   Application.Icon := Nil;
   Application.CreateForm(TMainForm, MainForm);
   Application.CreateForm(TformResolution, formResolution);
+  Application.CreateForm(TfrmAbout, frmAbout);
   Application.Run;
 end.

@@ -55,6 +55,8 @@ type
     constructor Create(AObject: TText); overload;
     destructor Destroy;
     procedure Draw;
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
     function IsInside(const X, Y: Integer): Boolean;
     property Brush: TBrush read FBrush write FBrush;
     property Caption: String read FCaption write FCaption;
@@ -112,7 +114,8 @@ type
     destructor Destroy;
 
     procedure Draw;
-
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
     function IsInside(const X, Y: Integer): Boolean;
 
     property Text: TText read FText write FText;
@@ -149,6 +152,14 @@ begin
 end;
 
 procedure TLine.Draw;
+const
+  DotSize = 3;
+
+  procedure DrawDot(const P: TPoint);
+  begin
+    FCanvas.Rectangle(P.X - DotSize, P.Y - DotSize, P.X + DotSize, P.Y + DotSize);
+  end;
+
 var
   StartPoint, FinishPoint: TPoint;
 begin
@@ -171,6 +182,13 @@ begin
       FinishPoint := FFinish.Pos;
   end;
   FCanvas.LineTo(FinishPoint.X, FinishPoint.Y);
+
+  if FIsSelected then
+  begin
+    DrawDot(StartPoint);
+    DrawDot(FinishPoint);
+  end;
+
   FText.FLeft := StartPoint.X;
   FText.FTop := StartPoint.Y;
   FText.FWidth := FinishPoint.X - StartPoint.X;
@@ -200,10 +218,82 @@ begin
   else Result := Abs(A * X + B * Y + C) / Sqrt(Sqr(A) + Sqr(B)) < threshold;
 end;
 
+procedure TLine.ReadFromFileStream(FileStream: TFileStream);
+
+  procedure ReadConnector(var Connector: TConnector);
+  begin
+    FileStream.Read(Connector.BindToElement, SizeOf(Connector.BindToElement));
+    if Connector.BindToElement then
+      FileStream.Read(Connector.Element, SizeOf(Integer))
+    else
+      FileStream.Read(Connector.Pos, SizeOf(Connector.Pos));
+  end;
+
+var
+  Color: TColor;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+begin
+  FText.ReadFromFileStream(FileStream);
+
+  // Pen
+  FileStream.Read(Color, SizeOf(Color));
+  FPen.Color := Color;
+
+  FileStream.Read(PenWidth, SizeOf(PenWidth));
+  FPen.Width := PenWidth;
+
+  FileStream.Read(PenStyle, SizeOf(PenStyle));
+  FPen.Style := PenStyle;
+
+  FileStream.Read(PenMode, SizeOf(PenMode));
+  FPen.Mode := PenMode;
+
+  ReadConnector(FStart);
+  ReadConnector(FFinish);
+end;
+
 procedure TLine.SetCanvas(const ACanvas: TCanvas);
 begin
   Self.FCanvas := ACanvas;
   FText.Canvas := ACanvas;
+end;
+
+procedure TLine.WriteToFileStream(FileStream: TFileStream);
+
+  procedure WriteConnector(const Connector: TConnector);
+  begin
+    FileStream.Write(Connector.BindToElement, SizeOf(Connector.BindToElement));
+    if Connector.BindToElement then
+      FileStream.Write(Connector.Element.Id, SizeOf(Connector.Element.Id))
+    else
+      FileStream.Write(Connector.Pos, SizeOf(Connector.Pos));
+  end;
+
+var
+  Color: TColor;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+begin
+  FText.WriteToFileStream(FileStream);
+
+  // Pen
+  Color := FPen.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  PenWidth := FPen.Width;
+  FileStream.Write(PenWidth, SizeOf(PenWidth));
+
+  PenStyle := FPen.Style;
+  FileStream.Write(PenStyle, SizeOf(PenStyle));
+
+  PenMode := FPen.Mode;
+  FileStream.Write(PenMode, SizeOf(PenMode));
+
+  WriteConnector(FStart);
+  WriteConnector(FFinish);
 end;
 
 { TText }
@@ -253,6 +343,78 @@ function TText.IsInside(const X, Y: Integer): Boolean;
 begin
   Result := (X >= FLeft) and (Y >= FTop) and (X <= FLeft + FWidth) and
     (Y <= FTop + FHeigth);
+end;
+
+procedure TText.ReadFromFileStream(FileStream: TFileStream);
+var
+  CaptionSize: Integer;
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  FontStyle: TFontStyles;
+  FontSize, Orientation: Integer;
+begin
+  Inherited;
+  // Caption
+  FileStream.Read(CaptionSize, SizeOf(CaptionSize));
+  SetLength(FCaption, CaptionSize);
+  FileStream.Read(Pointer(FCaption)^, CaptionSize * 2);
+  FileStream.Read(FTextFormat, SizeOf(FTextFormat));
+
+  // Brush
+  FileStream.Read(Color, SizeOf(Color));
+  FBrush.Color := Color;
+
+  FileStream.Read(BrushStyle, SizeOf(BrushStyle));
+  FBrush.Style := BrushStyle;
+
+  // Font
+  FileStream.Read(FontStyle, SizeOf(FontStyle));
+  FFont.Style := FontStyle;
+
+  FileStream.Read(FontSize, SizeOf(FontSize));
+  FFont.Size := FontSize;
+
+  FileStream.Read(Color, SizeOf(Color));
+  FFont.Color := Color;
+
+  FileStream.Read(Orientation, SizeOf(Orientation));
+  FFont.Orientation := Orientation;
+end;
+
+procedure TText.WriteToFileStream(FileStream: TFileStream);
+var
+  CaptionLength: Integer;
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  FontStyle: TFontStyles;
+  FontSize, Orientation: Integer;
+begin
+  Inherited;
+  // Caption
+  CaptionLength := Length(FCaption);
+  FileStream.Write(CaptionLength, SizeOf(CaptionLength));
+  FileStream.Write(Pointer(FCaption)^, CaptionLength * 2);
+  FileStream.Write(FTextFormat, SizeOf(FTextFormat));
+
+  // Brush
+  Color := FBrush.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  BrushStyle := Brush.Style;
+  FileStream.Write(BrushStyle, SizeOf(BrushStyle));
+
+  // Font
+  FontStyle := FFont.Style;
+  FileStream.Write(FontStyle, SizeOf(FontStyle));
+
+  FontSize := FFont.Size;
+  FileStream.Write(FontSize, SizeOf(FontSize));
+
+  Color := FFont.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  Orientation := FFont.Orientation;
+  FileStream.Write(Orientation, SizeOf(Orientation));
 end;
 
 { TElement }
@@ -312,7 +474,6 @@ begin
 
     if FIsSelected then
     begin
-
       Canvas.Brush.Style := bsClear;
       Canvas.Pen.Color := clBlue;
       Canvas.Pen.Width := 3;
@@ -366,17 +527,20 @@ begin
   Inherited;
   FileStream.Read(FShape, SizeOf(FShape));
 
+  // Caption
   FileStream.Read(CaptionSize, SizeOf(CaptionSize));
   SetLength(FCaption, CaptionSize);
   FileStream.Read(Pointer(FCaption)^, CaptionSize * 2);
   FileStream.Read(FTextFormat, SizeOf(FTextFormat));
 
+  // Brush
   FileStream.Read(Color, SizeOf(Color));
   FBrush.Color := Color;
 
   FileStream.Read(BrushStyle, SizeOf(BrushStyle));
   FBrush.Style := BrushStyle;
 
+  // Pen
   FileStream.Read(Color, SizeOf(Color));
   FPen.Color := Color;
 
@@ -389,6 +553,7 @@ begin
   FileStream.Read(PenMode, SizeOf(PenMode));
   FPen.Mode := PenMode;
 
+  // Font
   FileStream.Read(FontStyle, SizeOf(FontStyle));
   FFont.Style := FontStyle;
 
@@ -417,17 +582,20 @@ begin
   Inherited;
   FileStream.Write(FShape, SizeOf(FShape));
 
+  // Caption
   CaptionLength := Length(FCaption);
   FileStream.Write(CaptionLength, SizeOf(CaptionLength));
   FileStream.Write(Pointer(FCaption)^, CaptionLength * 2);
   FileStream.Write(FTextFormat, SizeOf(FTextFormat));
 
+  // Brush
   Color := FBrush.Color;
   FileStream.Write(Color, SizeOf(Color));
 
   BrushStyle := Brush.Style;
   FileStream.Write(BrushStyle, SizeOf(BrushStyle));
 
+  // Pen
   Color := FPen.Color;
   FileStream.Write(Color, SizeOf(Color));
 
@@ -440,6 +608,7 @@ begin
   PenMode := FPen.Mode;
   FileStream.Write(PenMode, SizeOf(PenMode));
 
+  // Font
   FontStyle := FFont.Style;
   FileStream.Write(FontStyle, SizeOf(FontStyle));
 

@@ -1,18 +1,21 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<Transactions>
-    <Transaction>1899.12.30 00:00:00.000.040,D:\Student\OAiP\TreeMaker\Source\Unit1.pas=D:\Student\OAiP\TreeMaker\Source\Vector.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.715,D:\Student\OAiP\TreeMaker\Source\ComplementedCanvas.pas=</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.888,D:\Student\OAiP\TreeMaker\Source\uModalResolution.pas=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.572,=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.068,=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.218,=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.364,=D:\Student\OAiP\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.532,D:\Student\OAiP\TreeMaker\Source\TreeMaker.dproj=D:\Student\OAiP\Project1.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.340,=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.613,D:\Student\OAiP\TreeMaker\Source\Unit1.dfm=D:\Student\OAiP\TreeMaker\Source\uAbout.dfm</Transaction>
     <Transaction>1899.12.30 00:00:00.000.405,D:\Student\OAiP\TreeMaker\Source\MainWindow.pas=D:\Student\OAiP\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.888,D:\Student\OAiP\TreeMaker\Source\uModalResolution.dfm=D:\Student\OAiP\TreeMaker\Source\Unit1.dfm</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.331,D:\Student\OAiP\TreeMaker\Source\asd.pas=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.040,D:\Student\OAiP\TreeMaker\Source\Unit1.pas=D:\Student\OAiP\TreeMaker\Source\Vector.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.613,D:\Student\OAiP\TreeMaker\Source\Unit1.pas=D:\Student\OAiP\TreeMaker\Source\uAbout.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.218,=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.068,=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.843,D:\Student\OAiP\TreeMaker\Source\asd.pas=</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.331,D:\Student\OAiP\TreeMaker\Source\asd.pas=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.715,D:\Student\OAiP\TreeMaker\Source\ComplementedCanvas.pas=</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.888,D:\Student\OAiP\TreeMaker\Source\uModalResolution.dfm=D:\Student\OAiP\TreeMaker\Source\Unit1.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.888,D:\Student\OAiP\TreeMaker\Source\uModalResolution.pas=D:\Student\OAiP\TreeMaker\Source\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.364,=D:\Student\OAiP\Unit1.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.405,D:\Student\OAiP\TreeMaker\Source\MainWindow.dfm=D:\Student\OAiP\Unit1.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.532,D:\Student\OAiP\TreeMaker\Source\TreeMaker.dproj=D:\Student\OAiP\Project1.dproj</Transaction>
   </Transactions>
 </BorlandProject>

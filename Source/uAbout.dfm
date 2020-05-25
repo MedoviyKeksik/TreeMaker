@@ -20,7 +20,6 @@ object frmAbout: TfrmAbout
     Width = 452
     Height = 187
     Align = alClient
-    Enabled = False
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -21
@@ -31,9 +30,10 @@ object frmAbout: TfrmAbout
       ''
       'If you found some bugs please contact me'
       ''
-      'email: Severin.Klim@yande.by'
+      'email: Severin.Klim@yandex.by'
       'telegram: https://t.me/MedoviyKeksik')
     ParentFont = False
+    ReadOnly = True
     TabOrder = 0
     ExplicitLeft = 64
     ExplicitTop = 80
