@@ -38,15 +38,15 @@ type
     StatusBar: TStatusBar;
     ImageList: TImageList;
     ActionList: TActionList;
-    FileOpen: TFileOpen;
-    EditCut: TEditCut;
-    EditCopy: TEditCopy;
-    EditPaste: TEditPaste;
-    EditSelectAll: TEditSelectAll;
-    EditUndo: TEditUndo;
-    EditDelete: TEditDelete;
-    FileSaveAs: TFileSaveAs;
-    FileExit: TFileExit;
+    actFileOpen: TFileOpen;
+    actEditCut: TEditCut;
+    actEditCopy: TEditCopy;
+    actEditPaste: TEditPaste;
+    actEditSelectAll: TEditSelectAll;
+    actEditUndo: TEditUndo;
+    actEditDelete: TEditDelete;
+    actFileSaveAs: TFileSaveAs;
+    actFileExit: TFileExit;
     miExit: TMenuItem;
     miCut: TMenuItem;
     miCopy: TMenuItem;
@@ -105,18 +105,20 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure WorkspaceMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
-    procedure EditSelectAllExecute(Sender: TObject);
-    procedure EditDeleteExecute(Sender: TObject);
+    procedure actEditSelectAllExecute(Sender: TObject);
+    procedure actEditDeleteExecute(Sender: TObject);
     procedure spinMainPropertiesChange(Sender: TObject);
     procedure ImageResolutionExecute(Sender: TObject);
-    procedure FileSaveAsAccept(Sender: TObject);
-    procedure FileOpenAccept(Sender: TObject);
+    procedure actFileSaveAsAccept(Sender: TObject);
+    procedure actFileOpenAccept(Sender: TObject);
     procedure edtTextChange(Sender: TObject);
     procedure btnBackgroundColorClick(Sender: TObject);
     procedure btnFontClick(Sender: TObject);
     procedure btnBorderColorClick(Sender: TObject);
     procedure HelpAboutExecute(Sender: TObject);
     procedure spinBorderWidthChange(Sender: TObject);
+    procedure ActionListUpdate(Action: TBasicAction; var Handled: Boolean);
+    procedure actEditDeleteUpdate(Sender: TObject);
   private
     FFileName: TFileName;
 
@@ -196,6 +198,13 @@ begin
   Tmp.Free;
 end;
 
+procedure TMainForm.ActionListUpdate(Action: TBasicAction;
+  var Handled: Boolean);
+begin
+  actEditSelectAll.Enabled := True;
+  actEditDelete.Enabled := True;
+end;
+
 procedure TMainForm.AddCircle(const X, Y: Integer);
 var
   Element: TElement;
@@ -228,7 +237,6 @@ var
   Element: TElement;
 begin
   DeselectAll;
-  StatusBar.Panels[0].Text := 'Element Created';
   Element := TElement.Create;
   Element.Shape := stRectangle;
   SetDefaultsElement(Element);
@@ -242,7 +250,7 @@ begin
   Element.Canvas := Workspace.Canvas;
   Element.SetSize(200, 100);
   Element.Font.Size := 10;
-  Element.Caption := 'Cursa4';
+  Element.Caption := '';
   Element.Brush.Color := $C4C4C4;
   Element.Pen.Width := 2;
   Element.Selected := True;
@@ -259,8 +267,7 @@ begin
   Tmp.SetSize(200, 100);
   Tmp.SetPosition(X - Tmp.Width shr 1, Y - Tmp.Heigth shr 1);
   Tmp.Canvas := Workspace.Canvas;
-  StatusBar.Panels[0].Text := 'Called AddTEXT';
-  Tmp.Caption := 'Some text';
+  Tmp.Caption := '';
   Texts.PushBack(Tmp);
 end;
 
@@ -357,7 +364,7 @@ begin
     for I := 0 to Lines.Size - 1 do
       with Lines.At[I] do
         if Selected then
-          Font.Assign(FontDialog.Font);
+          Text.Font.Assign(FontDialog.Font);
     ClearWorkspace;
     ReDraw;
   end;
@@ -391,7 +398,7 @@ begin
     Texts.At[I].Selected := False;
 end;
 
-procedure TMainForm.EditDeleteExecute(Sender: TObject);
+procedure TMainForm.actEditDeleteExecute(Sender: TObject);
 var
   I: Integer;
 begin
@@ -444,7 +451,12 @@ begin
   ReDraw;
 end;
 
-procedure TMainForm.EditSelectAllExecute(Sender: TObject);
+procedure TMainForm.actEditDeleteUpdate(Sender: TObject);
+begin
+  actEditDelete.Enabled := True;
+end;
+
+procedure TMainForm.actEditSelectAllExecute(Sender: TObject);
 begin
   SelectAll;
   ClearWorkspace;
@@ -495,7 +507,7 @@ begin
 
 end;
 
-procedure TMainForm.FileOpenAccept(Sender: TObject);
+procedure TMainForm.actFileOpenAccept(Sender: TObject);
 
   procedure OpenBMP(const FileName: TFileName);
   begin
@@ -591,7 +603,7 @@ begin
   ReDraw;
 end;
 
-procedure TMainForm.FileSaveAsAccept(Sender: TObject);
+procedure TMainForm.actFileSaveAsAccept(Sender: TObject);
 
   procedure SaveBMP(const FileName: TFileName);
   begin
@@ -731,12 +743,12 @@ begin
   Texts := TVector<TText>.Create;
   Lines := TVector<TLine>.Create;
 
+  StatusBar.Panels[0].Text := 'v 1.0';
+
   ImageWidth := 600;
   ImageHeigth := 840;
 
-  Workspace.Width := ImageWidth;
-  Workspace.Height := ImageHeigth;
-
+  UpdateResolution;
   ClearWorkspace;
   ShowPanel;
 end;
@@ -888,7 +900,7 @@ begin
   for I := 0 to Lines.Size - 1 do
     with Lines.At[I] do
       if Selected then
-        FillTextPanel(Caption);
+        FillTextPanel(Text.Caption);
   UpdateTWinControl(edtText);
 
   spinBorderWidth.Tag := ST_UNDEFINED or ST_UPDATING;
@@ -1022,13 +1034,13 @@ begin
         begin
           StartPoint.Create(X, Y);
 
-          if Assigned(ElementTmp) then
-          begin
-            SelectionState := ElementTmp.Selected;
-          end
-          else if Assigned(LineTmp) then
+          if Assigned(LineTmp) then
           begin
             SelectionState := LineTmp.Selected;
+          end
+          else if Assigned(ElementTmp) then
+          begin
+            SelectionState := ElementTmp.Selected;
           end
           else if Assigned(TextTmp) then
           begin
@@ -1038,11 +1050,7 @@ begin
           if not(ssCtrl in Shift) and not(SelectionState) then
             DeselectAll;
 
-          if Assigned(ElementTmp) then
-          begin
-            ElementTmp.Selected := True;
-          end
-          else if Assigned(LineTmp) then
+          if Assigned(LineTmp) then
           begin
             StP := GetPoint(LineTmp.Start);
             FnP := GetPoint(LineTmp.Finish);
@@ -1054,6 +1062,10 @@ begin
             if Assigned(ConnectorTmp) then
               DeselectAll;
             LineTmp.Selected := True;
+          end
+          else if Assigned(ElementTmp) then
+          begin
+            ElementTmp.Selected := True;
           end
           else if Assigned(TextTmp) then
           begin
@@ -1101,6 +1113,7 @@ begin
         begin
           if Assigned(ConnectorTmp) then
           begin
+            ConnectorTmp^.BindToElement := False;
             ConnectorTmp^.Pos.Create(X, Y);
             ClearWorkspace;
             ReDraw;
@@ -1120,16 +1133,7 @@ begin
           end;
         end;
       end;
-    toolRectangle:
-      ;
-    toolEllipse:
-      ;
-    toolCircle:
-      ;
-    toolLine:
-      ;
-    toolText:
-      ;
+
   end;
 end;
 

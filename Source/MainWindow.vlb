@@ -46,14 +46,8 @@ Coordinates=401,111,88,36
 [StatusBar]
 Coordinates=0,220,71,58
 
-[EditPaste]
-Coordinates=540,380,70,36
-
 [tlLine]
 Coordinates=491,399,46,36
-
-[FileExit]
-Coordinates=432,399,57,36
 
 [miDelete]
 Coordinates=363,399,65,36
@@ -66,9 +60,6 @@ Coordinates=358,155,98,58
 
 [edtText]
 Coordinates=210,0,57,58
-
-[EditSelectAll]
-Coordinates=432,303,87,36
 
 [lblY]
 Coordinates=263,166,49,58
@@ -88,9 +79,6 @@ Coordinates=705,78,82,36
 [tlMouse]
 Coordinates=136,399,60,36
 
-[EditDelete]
-Coordinates=57,399,74,36
-
 [BorderPanel]
 Coordinates=521,303,86,58
 
@@ -106,17 +94,11 @@ Coordinates=705,1,119,58
 [lblBorderWidth]
 Coordinates=540,232,99,58
 
-[EditCut]
-Coordinates=705,188,57,36
-
 [spinY]
 Coordinates=0,363,47,36
 
 [ImageList]
 Coordinates=705,298,70,36
-
-[EditUndo]
-Coordinates=705,353,67,36
 
 [FontDialog]
 Coordinates=705,408,77,36
@@ -139,12 +121,6 @@ Coordinates=547,473,76,36
 [lblFont]
 Coordinates=73,303,53,58
 
-[EditCopy]
-Coordinates=478,473,67,36
-
-[FileOpen]
-Coordinates=409,473,67,36
-
 [ImageResolution]
 Coordinates=862,1,111,36
 
@@ -159,9 +135,6 @@ Coordinates=340,473,61,36
 
 [lblWidth]
 Coordinates=270,303,61,58
-
-[FileSaveAs]
-Coordinates=616,399,80,36
 
 [lblBackground]
 Coordinates=358,78,96,58
@@ -223,4 +196,31 @@ Coordinates=705,243,83,36
 
 [spinWidth]
 Coordinates=705,133,68,36
+
+[actEditCut]
+Coordinates=705,188,57,36
+
+[actEditCopy]
+Coordinates=478,473,67,36
+
+[actEditPaste]
+Coordinates=540,380,70,36
+
+[actEditSelectAll]
+Coordinates=432,303,87,36
+
+[actEditUndo]
+Coordinates=705,353,67,36
+
+[actEditDelete]
+Coordinates=57,399,74,36
+
+[actFileOpen]
+Coordinates=409,473,67,36
+
+[actFileSaveAs]
+Coordinates=616,399,80,36
+
+[actFileExit]
+Coordinates=432,399,57,36
 

@@ -133,7 +133,13 @@ uses
   MainWindow;
 
 const
-  DefaultTextFormat: TTextFormat = [tfSingleLine, tfCenter, tfVerticalCenter];
+  DefaultTextFormat: TTextFormat = [
+    tfNoClip,
+    tfWordBreak
+//    tfSingleLine,
+//    tfCenter,
+//    tfVerticalCenter
+    ];
 
   { TLine }
 
@@ -157,11 +163,13 @@ const
 
   procedure DrawDot(const P: TPoint);
   begin
+    FCanvas.Brush.Color := clBlue;
     FCanvas.Rectangle(P.X - DotSize, P.Y - DotSize, P.X + DotSize, P.Y + DotSize);
   end;
 
 var
   StartPoint, FinishPoint: TPoint;
+  Size: Integer;
 begin
   case FStart.BindToElement of
     True:
@@ -188,11 +196,22 @@ begin
     DrawDot(StartPoint);
     DrawDot(FinishPoint);
   end;
+  FCanvas.Brush.Style := bsClear;
+
+  FCanvas.Font := FText.Font;
+  Size := FCanvas.TextWidth(FText.Caption);
 
   FText.FLeft := StartPoint.X;
   FText.FTop := StartPoint.Y;
   FText.FWidth := FinishPoint.X - StartPoint.X;
   FText.FHeigth := FinishPoint.Y - StartPoint.Y;
+
+  if FText.Width < Size then
+  begin
+    FText.FLeft := FText.Left - (Size - FText.Width) shr 1;
+    FText.FWidth := Size;
+  end;
+
   FText.Draw;
 end;
 
@@ -303,11 +322,12 @@ begin
   FBrush := TBrush.Create;
   FFont := TFont.Create;
   FTextFormat := DefaultTextFormat;
-  FCaption := 'Some text';
+  FCaption := '';
 end;
 
 constructor TText.Create(AObject: TText);
 begin
+  Inherited Create(AObject);
   FCaption := AObject.Caption;
   FBrush := TBrush.Create;
   FFont := TFont.Create;
@@ -326,15 +346,29 @@ end;
 procedure TText.Draw;
 var
   Rect: TRect;
+  tfCalc: TTextFormat;
 begin
-  Rect := TRect.Create(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+  tfCalc := FTextFormat;
+  Include(tfCalc, tfCalcRect);
+  Rect.Create(FLeft, FTop + FHeigth shr 1, FLeft + FWidth, Ftop + FHeigth shr 1);
+  FCanvas.TextRect(Rect, FCaption, tfCalc);
+
+  if Rect.Width <= FWidth then
+    Rect.Create(FLeft + (FWidth - Rect.Width) shr 1, FTop + (FHeigth - Rect.Height) shr 1,
+      FLeft + (FWidth + Rect.Width) shr 1, FTop + (FHeigth + Rect.Height) shr 1)
+  else
+    Rect.Create(FLeft, FTop + (FHeigth - Rect.Height) shr 1, FLeft + FWidth,
+      FTop + (FHeigth + Rect.Height) shr 1);
+
   FCanvas.Font := FFont;
   FCanvas.Brush := FBrush;
   FCanvas.TextRect(Rect, FCaption, FTextFormat);
+
   if FIsSelected then
   begin
     FCanvas.Brush.Style := bsClear;
     FCanvas.Pen.Color := clBlue;
+    Rect.Create(Fleft, FTop, FLeft + FWidth, FTop + FHeigth);
     FCanvas.Rectangle(Rect);
   end;
 end;
@@ -453,6 +487,7 @@ end;
 procedure TElement.Draw;
 var
   Rect: TRect;
+  tfCalc: TTextFormat;
 begin
   if FIsVisible then
   begin
@@ -467,23 +502,42 @@ begin
       stEllipse, stCircle:
         Canvas.Ellipse(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
     end;
-//    FText.Draw;
 
-    Rect.Create(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);;
+
+    tfCalc := FTextFormat;
+    Include(tfCalc, tfCalcRect);
+    Rect.Create(FLeft, FTop + FHeigth shr 1, FLeft + FWidth, Ftop + FHeigth shr 1);
+    Rect.Width := Rect.Width - FPen.Width - 3;
+    FCanvas.TextRect(Rect, FCaption, tfCalc);
+
+    if Rect.Width <= FWidth - FPen.Width - 3 then
+      Rect.Create(FLeft + (FWidth - Rect.Width) shr 1, FTop + (FHeigth - Rect.Height) shr 1,
+        FLeft + (FWidth + Rect.Width) shr 1, FTop + (FHeigth + Rect.Height) shr 1)
+    else
+    begin
+      Rect.Create(FLeft, FTop + (FHeigth - Rect.Height) shr 1, FLeft + FWidth,
+        FTop + (FHeigth + Rect.Height) shr 1);
+      Rect.Left := Rect.Left + (FPen.Width shr 1) + 2;
+      Rect.Width := Rect.Width - Fpen.Width - 3;
+    end;
+    FCanvas.Brush.Style := bsClear;
     FCanvas.TextRect(Rect, FCaption, FTextFormat);
+
+//    Rect.Create(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);;
+//    FCanvas.TextRect(Rect, FCaption, FTextFormat);
 
     if FIsSelected then
     begin
-      Canvas.Brush.Style := bsClear;
-      Canvas.Pen.Color := clBlue;
-      Canvas.Pen.Width := 3;
+      FCanvas.Brush.Style := bsClear;
+      FCanvas.Pen.Color := clBlue;
+      FCanvas.Pen.Width := 3;
       case FShape of
       stRectangle, stSquare:
-        Canvas.Rectangle(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+        FCanvas.Rectangle(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
       // stRoundRect: ;
       // stRoundSquare: ;
       stEllipse, stCircle:
-        Canvas.Ellipse(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+        FCanvas.Ellipse(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
     end;
     end;
   end;
