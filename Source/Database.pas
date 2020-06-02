@@ -213,7 +213,7 @@ end;
 
 function TLine.IsInside(const X, Y: Integer): Boolean;
 const
-  threshold = 10;
+  threshold = 5;
 var
   A, B, C: Integer;
   P, Q: TPoint;

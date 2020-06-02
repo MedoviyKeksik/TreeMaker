@@ -1,0 +1,1248 @@
+unit MainWindow;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.Menus, Vcl.ExtCtrls, Vcl.StdCtrls,
+  Database, Vcl.ToolWin, Vcl.ComCtrls, System.Actions, Vcl.ActnList,
+  Vcl.StdActns, System.ImageList, Vcl.ImgList, Vector, Vcl.ActnMan,
+  Vcl.ActnColorMaps, Vcl.Samples.Spin;
+
+const
+  // Константы состояний контролов
+  ST_ALL_OK = 0;
+  ST_DIFF_VALUES = 1;
+  ST_UNDEFINED = 2;
+  ST_ERROR = 3;
+  ST_UPDATING = 4;
+
+type
+  // Инструменты
+  TTools = (toolMouse, toolRectangle, toolEllipse, toolCircle, toolLine,
+    toolText);
+
+  TMainForm = class(TForm)
+    Menu: TMainMenu;
+    miFile: TMenuItem;
+    MiOpen: TMenuItem;
+    miSave: TMenuItem;
+    miEdit: TMenuItem;
+    miHelp: TMenuItem;
+    miAbout: TMenuItem;
+    miUndo: TMenuItem;
+    ToolbarPanel: TPanel;
+    miView: TMenuItem;
+    Properties: TPanel;
+    StatusBar: TStatusBar;
+    ImageList: TImageList;
+    ActionList: TActionList;
+    actFileOpen: TFileOpen;
+    actEditCut: TEditCut;
+    actEditCopy: TEditCopy;
+    actEditPaste: TEditPaste;
+    actEditSelectAll: TEditSelectAll;
+    actEditUndo: TEditUndo;
+    actEditDelete: TEditDelete;
+    actFileSaveAs: TFileSaveAs;
+    actFileExit: TFileExit;
+    miExit: TMenuItem;
+    miCut: TMenuItem;
+    miCopy: TMenuItem;
+    miPaste: TMenuItem;
+    miSelectAll: TMenuItem;
+    miDelete: TMenuItem;
+    ToolBar: TToolBar;
+    tlMouse: TToolButton;
+    tlRectangle: TToolButton;
+    tlEllipse: TToolButton;
+    tlCircle: TToolButton;
+    tlLine: TToolButton;
+    MainProperties: TPanel;
+    lblPosition: TLabel;
+    lblX: TLabel;
+    lblY: TLabel;
+    ScrollBox: TScrollBox;
+    Workspace: TImage;
+    ScrollBoxProperties: TScrollBox;
+    lblWidth: TLabel;
+    lblHeigth: TLabel;
+    TextProperties: TPanel;
+    FontDialog: TFontDialog;
+    lblFont: TLabel;
+    btnFont: TButton;
+    BorderPanel: TPanel;
+    lblBorder: TLabel;
+    lblColor: TLabel;
+    lblBorderWidth: TLabel;
+    BackGroundPanel: TPanel;
+    lblBackground: TLabel;
+    btnBackgroundColor: TButton;
+    lblBackgroundColor: TLabel;
+    ColorDialog: TColorDialog;
+    spinX: TSpinEdit;
+    spinY: TSpinEdit;
+    spinHeigth: TSpinEdit;
+    spinWidth: TSpinEdit;
+    PositionPanelCaptions: TPanel;
+    PositionSpinPanel: TPanel;
+    pnlText: TPanel;
+    lblText: TLabel;
+    edtText: TEdit;
+    HelpAbout: TAction;
+    miImage: TMenuItem;
+    miResolution: TMenuItem;
+    ImageResolution: TAction;
+    tlText: TToolButton;
+    btnBorderColor: TButton;
+    spinBorderWidth: TSpinEdit;
+    procedure FormCreate(Sender: TObject);
+    procedure toolButtonClick(Sender: TObject);
+    procedure WorkspaceMouseMove(Sender: TObject; Shift: TShiftState;
+      X, Y: Integer);
+    procedure WorkspaceMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure WorkspaceMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure actEditSelectAllExecute(Sender: TObject);
+    procedure actEditDeleteExecute(Sender: TObject);
+    procedure spinMainPropertiesChange(Sender: TObject);
+    procedure ImageResolutionExecute(Sender: TObject);
+    procedure actFileSaveAsAccept(Sender: TObject);
+    procedure actFileOpenAccept(Sender: TObject);
+    procedure edtTextChange(Sender: TObject);
+    procedure btnBackgroundColorClick(Sender: TObject);
+    procedure btnFontClick(Sender: TObject);
+    procedure btnBorderColorClick(Sender: TObject);
+    procedure HelpAboutExecute(Sender: TObject);
+    procedure spinBorderWidthChange(Sender: TObject);
+    procedure ActionListUpdate(Action: TBasicAction; var Handled: Boolean);
+    procedure actEditDeleteUpdate(Sender: TObject);
+  private
+    ImageWidth, ImageHeigth: Integer; // Размеры документа
+
+    TextTmp: TText;
+    ElementTmp: TElement;
+    LineTmp: TLine;
+    ConnectorTmp: ^TConnector;
+    SelectionState: Boolean;
+
+    CurrentTool: TTools; // Текущий инструмент
+    StartPoint: TPoint; // Начальная точка (Точка нажима клавиши мыши)
+
+    Elements: TVector<TElement>;  // Динамический массив элементов
+    Texts: TVector<TText>;        // Динамеческий массив текстов
+    Lines: TVector<TLine>;        // Динамический массив линий
+
+    function IsClickedElements(const X, Y: Integer): TElement;
+    function IsClickedLines(const X, Y: Integer): TLine;
+    function IsClickedTexts(const X, Y: Integer): TText;
+
+    procedure SetDefaultsElement(Element: TElement);
+
+    // Добавление элементов
+    procedure AddRectangle(const X, Y: Integer);
+    procedure AddEllipse(const X, Y: Integer);
+    procedure AddCircle(const X, Y: Integer);
+    procedure AddText(const X, Y: Integer);
+
+    // Выделить все
+    procedure SelectAll;
+    // Снять выделение
+    procedure DeselectAll;
+
+    procedure ReDraw;            // Перерисовка
+    procedure ClearWorkspace;    // Очистка рабочей области
+
+    procedure ShowPanel;         // Обновление значений контролов
+
+    procedure ClearMainPropertiesPanel;
+    procedure FillMainPropertiesPanel(const X, Y, Width, Heigth: Integer);
+    procedure FillTextPanel(const Text: String);
+    procedure FillBorderPanel(const Value: Integer);
+    procedure UpdateResolution;
+  public
+    { Public declarations }
+  end;
+
+var
+  MainForm: TMainForm;
+
+implementation
+
+{$R *.dfm}
+
+uses
+  uModalResolution,
+  Vcl.Imaging.jpeg,
+  Vcl.Imaging.pngimage, uAbout;
+
+// Передвижение элемента
+procedure ElementOnMove(Sender: TObject; const X, Y: Integer);
+var
+  Tmp: TElement;
+begin
+  Tmp := TElement.Create(Sender as TElement);
+  Tmp.SetPosition(Tmp.Left + X, Tmp.Top + Y);
+  Tmp.Draw;
+  Tmp.Free;
+end;
+
+// Передвижение текста
+procedure TextOnMove(Sender: TObject; const X, Y: Integer);
+var
+  Tmp: TText;
+begin
+  Tmp := TText.Create(Sender as TText);
+  Tmp.SetPosition(Tmp.Left + X, Tmp.Top + Y);
+  Tmp.Draw;
+  Tmp.Free;
+end;
+
+procedure TMainForm.ActionListUpdate(Action: TBasicAction;
+  var Handled: Boolean);
+begin
+  actEditSelectAll.Enabled := True;
+  actEditDelete.Enabled := True;
+end;
+
+procedure TMainForm.AddCircle(const X, Y: Integer);
+var
+  Element: TElement;
+begin
+  DeselectAll;
+  Element := TElement.Create;
+  Element.Shape := stCircle;
+  SetDefaultsElement(Element);
+  Element.SetSize(50, 50);
+  Element.SetPosition(X - Element.Width shr 1, Y - Element.Heigth shr 1);
+  Element.Draw;
+  Elements.PushBack(Element);
+end;
+
+procedure TMainForm.AddEllipse(const X, Y: Integer);
+var
+  Element: TElement;
+begin
+  DeselectAll;
+  Element := TElement.Create;
+  Element.Shape := stEllipse;
+  SetDefaultsElement(Element);
+  Element.SetPosition(X - Element.Width shr 1, Y - Element.Heigth shr 1);
+  Element.Draw;
+  Elements.PushBack(Element);
+end;
+
+procedure TMainForm.AddRectangle(const X, Y: Integer);
+var
+  Element: TElement;
+begin
+  DeselectAll;
+  Element := TElement.Create;
+  Element.Shape := stRectangle;
+  SetDefaultsElement(Element);
+  Element.SetPosition(X - Element.Width shr 1, Y - Element.Heigth shr 1);
+  Element.Draw;
+  Elements.PushBack(Element);
+end;
+
+procedure TMainForm.SetDefaultsElement(Element: TElement);
+begin
+  Element.Canvas := Workspace.Canvas;
+  Element.SetSize(100, 50);
+  Element.Font.Size := 10;
+  Element.Caption := '';
+  Element.Brush.Color := $C4C4C4;
+  Element.Pen.Width := 2;
+  Element.Selected := True;
+end;
+
+procedure TMainForm.AddText(const X, Y: Integer);
+var
+  Tmp: TText;
+begin
+  DeselectAll;
+  Tmp := TText.Create;
+  Tmp.Selected := True;
+  Tmp.SetSize(100, 50);
+  Tmp.SetPosition(X - Tmp.Width shr 1, Y - Tmp.Heigth shr 1);
+  Tmp.Canvas := Workspace.Canvas;
+  Tmp.Caption := '';
+  Texts.PushBack(Tmp);
+end;
+
+procedure TMainForm.btnBackgroundColorClick(Sender: TObject);
+var
+  I: Integer;
+  TmpColor: TColor;
+  State: Integer;
+begin
+  if ColorDialog.Execute then
+  begin
+    for I := 0 to Elements.Size - 1 do
+      with Elements.At[I] do
+        if Selected then
+          Brush.Color := ColorDialog.Color;
+    ClearWorkspace;
+    ReDraw;
+  end;
+end;
+
+procedure TMainForm.btnBorderColorClick(Sender: TObject);
+var
+  I: Integer;
+begin
+  if ColorDialog.Execute then
+  begin
+    for I := 0 to Elements.Size - 1 do
+      with Elements.At[I] do
+        if Selected then
+          Pen.Color := ColorDialog.Color;
+
+    for I := 0 to Lines.Size - 1 do
+      with Lines.At[I] do
+        if Selected then
+          Pen.Color := ColorDialog.Color;
+  end;
+end;
+
+procedure TMainForm.btnFontClick(Sender: TObject);
+var
+  I: Integer;
+  TmpFont: TFont;
+  State: Integer;
+begin
+  State := ST_UNDEFINED;
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        if State = ST_UNDEFINED then
+           TmpFont := Font
+        else if not TmpFont.Equals(Font) then
+        begin
+          State := ST_DIFF_VALUES;
+          Break;
+        end;
+
+  if State <> ST_DIFF_VALUES then
+    for I := 0 to Texts.Size - 1 do
+      with Texts.At[I] do
+        if State = ST_UNDEFINED then
+           TmpFont := Font
+        else if not TmpFont.Equals(Font) then
+        begin
+          State := ST_DIFF_VALUES;
+          Break;
+        end;
+
+  if State <> ST_DIFF_VALUES then
+    for I := 0 to Lines.Size - 1 do
+      with Lines.At[I] do
+        if State = ST_UNDEFINED then
+           TmpFont := Font
+        else if not TmpFont.Equals(Font) then
+        begin
+          State := ST_DIFF_VALUES;
+          Break;
+        end;
+
+  if Assigned(TmpFont) then
+    FontDialog.Font.Assign(TmpFont);
+
+  if FontDialog.Execute then
+  begin
+    for I := 0 to Elements.Size - 1 do
+      with Elements.At[I] do
+        if Selected then
+          Font.Assign(FontDialog.Font);
+
+    for I := 0 to Texts.Size - 1 do
+      with Texts.At[I] do
+        if Selected then
+          Font.Assign(FontDialog.Font);
+
+    for I := 0 to Lines.Size - 1 do
+      with Lines.At[I] do
+        if Selected then
+          Text.Font.Assign(FontDialog.Font);
+    ClearWorkspace;
+    ReDraw;
+  end;
+end;
+
+procedure TMainForm.ClearMainPropertiesPanel;
+begin
+  spinX.Value := -2;
+  spinY.Value := -2;
+  spinwidth.Value := -2;
+  spinHeigth.Value := -2;
+end;
+
+procedure TMainForm.ClearWorkspace;
+begin
+  Workspace.Canvas.Brush.Style := bsSolid;
+  Workspace.Canvas.Brush.Color := clWhite;
+  Workspace.Canvas.FillRect(TRect.Create(0, 0, Workspace.Width,
+    Workspace.Height));
+end;
+
+procedure TMainForm.DeselectAll;
+var
+  I: Integer;
+begin
+  for I := 0 to Elements.Size - 1 do
+    Elements.At[I].Selected := False;
+  for I := 0 to Lines.Size - 1 do
+    Lines.At[I].Selected := False;
+  for I := 0 to Texts.Size - 1 do
+    Texts.At[I].Selected := False;
+end;
+
+procedure TMainForm.actEditDeleteExecute(Sender: TObject);
+var
+  I: Integer;
+begin
+  I := 0;
+  while I < Lines.Size do
+  begin
+    if Lines.At[I].Selected then
+    begin
+      Lines.At[I].Free;
+      Lines.Erase(I);
+    end
+    else
+    begin
+      with Lines.At[I] do
+      begin
+        if FStart.BindToElement and FStart.Element.Selected then
+          FStart.OffBind;
+        if FFinish.BindToElement and FFinish.Element.Selected then
+          FFinish.OffBind;
+      end;
+      Inc(I);
+    end;
+  end;
+
+  I := 0;
+  while I < Elements.Size do
+  begin
+    if Elements.At[I].Selected then
+    begin
+      Elements.At[I].Free;
+      Elements.Erase(I);
+    end
+    else
+      Inc(I);
+  end;
+
+  I := 0;
+  while I < Texts.Size do
+  begin
+    if Texts.At[I].Selected then
+    begin
+      Texts.At[I].Free;
+      Texts.Erase(I);
+    end
+    else
+      Inc(I);
+  end;
+
+  ClearWorkspace;
+  ReDraw;
+end;
+
+procedure TMainForm.actEditDeleteUpdate(Sender: TObject);
+begin
+  actEditDelete.Enabled := True;
+end;
+
+procedure TMainForm.actEditSelectAllExecute(Sender: TObject);
+begin
+  SelectAll;
+  ClearWorkspace;
+  ReDraw;
+end;
+
+procedure TMainForm.edtTextChange(Sender: TObject);
+var
+  Tmp: TEdit;
+  I: Integer;
+begin
+  Tmp := Sender as TEdit;
+  if Tmp.Tag and ST_UPDATING > 0 then
+    exit;
+  if Tmp.Tag = ST_ERROR then
+    exit;
+
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        Caption := Tmp.Text;
+
+  for I := 0 to Texts.Size - 1 do
+    with Texts.At[I] do
+      if Selected then
+        Caption := Tmp.Text;
+
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        Text.Caption := Tmp.Text;
+  ClearWorkspace;
+  ReDraw;
+end;
+
+function ExtendWithExt(const FileName, Extension: TFileName): TFileName;
+begin
+  if Length(FileName) < Length(Extension) then
+    Result := FileName + Extension
+  else
+  begin
+    if Copy(FileName, Length(FileName) - Length(Extension) + 1,
+      Length(Extension)) <> Extension then
+      Result := FileName + Extension
+    else
+      Result := FileName;
+  end;
+
+end;
+
+procedure TMainForm.actFileOpenAccept(Sender: TObject);
+
+  procedure OpenBMP(const FileName: TFileName);
+  begin
+    Workspace.Picture.LoadFromFile(FileName);
+  end;
+
+  procedure OpenJPEG(const FileName: TFileName);
+  begin
+    Workspace.Picture.Graphic.LoadFromFile(FileName);
+  end;
+
+  procedure OpenPNG(const FileName: TFileName);
+  begin
+    Workspace.Picture.Graphic.LoadFromFile(FileName);
+  end;
+
+  procedure OpenTMF(const FileName: TFileName);
+
+    function ElementToInt(Element: TElement): Integer;
+    var
+      A: Integer absolute Element;
+    begin
+      Result := A;
+    end;
+
+  var
+    fsFile: TFileStream;
+    N, PredSize, I: Integer;
+  begin
+    fsFile := TFileStream.Create(FileName, fmOpenRead);
+
+    // ImageSize
+    fsFile.Read(ImageWidth, SizeOf(ImageWidth));
+    fsFile.Read(ImageHeigth, SizeOf(ImageHeigth));
+    UpdateResolution;
+
+    // Elements
+    fsFile.Read(N, SizeOf(N));
+    PredSize := Elements.Size;
+    Elements.Reserve(N);
+    for I := PredSize to N - 1 do
+    begin
+      Elements.At[I] := TElement.Create;
+      Elements.At[I].Canvas := Workspace.Canvas;
+    end;
+    for I := 0 to N - 1 do
+      Elements.At[I].ReadFromFileStream(fsFile);
+
+    // Lines
+    fsFile.Read(N, SizeOF(N));
+    PredSize := Lines.Size;
+    Lines.Reserve(N);
+    for I := PredSize to N - 1 do
+    begin
+      Lines.At[I] := TLine.Create;
+      Lines.At[I].Canvas := Workspace.Canvas;
+    end;
+    for I := 0 to N - 1 do
+      with Lines.At[I] do
+      begin
+        ReadFromFileStream(fsFile);
+        if Start.BindToElement then
+          FStart.Element := Elements.At[ElementToInt(Start.Element)];
+        if Finish.BindToElement then
+          FFinish.Element := Elements.At[ElementToInt(Finish.Element)];
+      end;
+    // Texts
+    fsFile.Read(N, SizeOf(N));
+    PredSize := Texts.Size;
+    Texts.Reserve(N);
+    for I := PredSize to N - 1 do
+    begin
+      Texts.At[I] := TText.Create;
+      Texts.At[I].Canvas := Workspace.Canvas;
+    end;
+    for I := 0 to N - 1 do
+      Texts.At[I].ReadFromFileStream(fsFile);
+
+    fsFile.Free;
+  end;
+
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := (Sender as TFileOpen).Dialog;
+  case OpenDialog.FilterIndex of
+//  1: OpenBMP(ExtendWithExt(OpenDialog.FileName, '.bmp'));
+//  2: OpenJPEG(ExtendWithExt(OpenDialog.FileName, '.jpg'));
+//  3: OpenPNG(ExtendWithExt(OpenDialog.FileName, '.png'));
+  1: OpenTMF(ExtendWithExt(OpenDialog.FileName, '.tmf'));
+  end;
+  ClearWorkspace;
+  ReDraw;
+end;
+
+procedure TMainForm.actFileSaveAsAccept(Sender: TObject);
+
+  procedure SaveBMP(const FileName: TFileName);
+  var
+    Res: Integer;
+  begin
+    Res := mrOk;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
+
+    if Res = mrOk then
+      Workspace.Picture.SaveToFile(FileName);
+  end;
+
+  procedure SaveJPEG(const FileName: TFileName);
+  var
+    imJPEG: TJpegImage;
+    Res: Integer;
+  begin
+    Res := mrYes;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
+    if Res = mrYes then
+    begin
+      imJpeg := TJPEGImage.Create;
+      imJPEG.Assign(Workspace.Picture.Graphic);
+      imJPEG.SaveToFile(FileName);
+    end;
+  end;
+
+  procedure SavePNG(const FileName: TFileName);
+  var
+    imPNG: TPngImage;
+    Res: Integer;
+  begin
+    Res := mrYes;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
+    if Res = mrYes then
+    begin
+      imPNG := TPngImage.Create;
+      imPNG.Assign(Workspace.Picture.Graphic);
+      imPNG.SaveToFile(FileName);
+    end;
+  end;
+
+  procedure SaveTMF(const FileName: TFileName);
+  var
+    fsFile: TFileStream;
+    N, I: Integer;
+    Res: Integer;
+  begin
+    Res := mrYes;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
+
+    if Res = mrYes then
+    begin
+      fsFile := TFileStream.Create(FileName, fmCreate);
+
+      // ImageSize
+      fsFile.Write(ImageWidth, SizeOf(ImageWidth));
+      fsFile.Write(ImageHeigth, SizeOf(ImageHeigth));
+
+      // Elements
+      N := Elements.Size;
+      fsFile.Write(N, SizeOf(N));
+      for I := 0 to Elements.Size - 1 do
+      begin
+        Elements.At[I].Id := I;
+        Elements.At[I].WriteToFileStream(fsFile);
+      end;
+
+      // Lines
+      N := Lines.Size;
+      fsFile.Write(N, SizeOf(N));
+      for I := 0 to Lines.Size - 1 do
+        Lines.At[I].WriteToFileStream(fsFile);
+
+      // Texts
+      N := Texts.Size;
+      fsFile.Write(N, SizeOf(N));
+      for I := 0 to Texts.Size - 1 do
+        Texts.At[I].WriteToFileStream(fsFile);
+
+      fsFile.Free;
+    end;
+  end;
+
+var
+  SaveDialog: TSaveDialog;
+begin
+  SaveDialog := (Sender as TFileSaveAs).Dialog;
+  case SaveDialog.FilterIndex of
+    1:
+      SaveBMP(ExtendWithExt(SaveDialog.FileName, '.bmp'));
+    2:
+      SaveJPEG(ExtendWithExt(SaveDialog.FileName, '.jpg'));
+    3:
+      SavePNG(ExtendWithExt(SaveDialog.FileName, '.png'));
+    4:
+      SaveTMF(ExtendWithExt(SaveDialog.FileName, '.tmf'));
+  end;
+end;
+
+procedure TMainForm.FillBorderPanel(const Value: Integer);
+begin
+  if spinBorderWidth.Tag = ST_DIFF_VALUES or ST_UPDATING then Exit;
+  if spinBorderWidth.Tag = ST_ERROR or ST_UPDATING then exit;
+    if (spinBorderWidth.Tag = ST_UNDEFINED or ST_UPDATING) then
+    begin
+      spinBorderWidth.Value := Value;
+      spinBorderWidth.Tag := ST_ALL_OK or ST_UPDATING;
+    end
+    else if (spinBorderWidth.Value <> Value) then
+    begin
+      spinBorderWidth.Tag := ST_DIFF_VALUES or ST_UPDATING;
+      spinBorderWidth.Value := 0;
+    end;
+end;
+
+procedure TMainForm.FillMainPropertiesPanel(const X, Y, Width, Heigth: Integer);
+
+  procedure UpdateSpin(Spin: TSpinEdit; Value: Integer);
+  begin
+    if Spin.Tag = ST_DIFF_VALUES or ST_UPDATING then exit;
+    if Spin.Tag = ST_ERROR or ST_UPDATING then exit;
+    if (Spin.Tag = ST_UNDEFINED or ST_UPDATING) then
+    begin
+      Spin.Value := Value;
+      Spin.Tag := ST_ALL_OK or ST_UPDATING;
+    end
+    else if (Spin.Value <> Value) then
+    begin
+      Spin.Tag := ST_DIFF_VALUES or ST_UPDATING;
+      Spin.Value := 0;
+    end;
+  end;
+
+begin
+  UpdateSpin(spinX, X);
+  UpdateSpin(spinY, Y);
+  UpdateSpin(spinwidth, Width);
+  UpdateSpin(spinHeigth, Heigth);
+end;
+
+procedure TMainForm.FillTextPanel(const Text: String);
+begin
+  if edtText.Tag = ST_ERROR or ST_UPDATING then exit;
+  if edtText.Tag = ST_DIFF_VALUES  or ST_UPDATING then exit;
+  if (edtText.Tag and ST_UNDEFINED > 0) or (edtText.Text = Text) then
+  begin
+    edtText.Text := Text;
+    edtText.Tag := ST_ALL_OK or ST_UPDATING;
+  end
+  else
+  begin
+    edtText.Tag := ST_DIFF_VALUES or ST_UPDATING;
+    edtText.Text := '';
+  end;
+end;
+
+procedure TMainForm.FormCreate(Sender: TObject);
+begin
+  CurrentTool := toolMouse;
+  Elements := TVector<TElement>.Create;
+  Texts := TVector<TText>.Create;
+  Lines := TVector<TLine>.Create;
+
+  StatusBar.Panels[0].Text := 'v 1.0';
+
+  ImageWidth := 600;
+  ImageHeigth := 840;
+
+  UpdateResolution;
+  ClearWorkspace;
+  ShowPanel;
+end;
+
+procedure TMainForm.HelpAboutExecute(Sender: TObject);
+begin
+  frmAbout.Show;
+end;
+
+procedure TMainForm.ImageResolutionExecute(Sender: TObject);
+var
+  Res: TModalResult;
+begin
+  Res := formResolution.ChangeResolution(ImageWidth, ImageHeigth);
+  if Res = mrOk then
+  begin
+    ImageWidth := formResolution.Width;
+    ImageHeigth := formResolution.Heigth;
+
+    UpdateResolution;
+  end;
+end;
+
+
+function TMainForm.IsClickedElements(const X, Y: Integer): TElement;
+var
+  I: Integer;
+begin
+  Result := Nil;
+  for I := Elements.Size - 1 downto 0 do
+    if Elements.At[I].IsInside(X, Y) then
+    begin
+      Result := Elements.At[I];
+      Break;
+    end;
+end;
+
+function TMainForm.IsClickedLines(const X, Y: Integer): TLine;
+var
+  I: Integer;
+begin
+  Result := Nil;
+  for I := Lines.Size - 1 downto 0 do
+    if Lines.At[I].IsInside(X, Y) then
+    begin
+      Result := Lines.At[I];
+      Break;
+    end;
+end;
+
+function TMainForm.IsClickedTexts(const X, Y: Integer): TText;
+var
+  I: Integer;
+begin
+  Result := Nil;
+  for I := Texts.Size - 1 downto 0 do
+    if Texts.At[I].IsInside(X, Y) then
+    begin
+      Result := Texts.At[I];
+      Break;
+    end;
+end;
+
+procedure TMainForm.ReDraw;
+var
+  I: Integer;
+begin
+  for I := 0 to Lines.Size - 1 do
+    if not Lines.At[I].Selected then
+      Lines.At[I].Draw;
+  for I := 0 to Elements.Size - 1 do
+    Elements.At[I].Draw;
+  for I := 0 to Texts.Size - 1 do
+    Texts.At[I].Draw;
+  for I := 0 to Lines.Size - 1 do
+    if Lines.At[I].Selected then
+      Lines.At[I].Draw;
+end;
+
+procedure TMainForm.SelectAll;
+var
+  I: Integer;
+begin
+  for I := 0 to Elements.Size - 1 do
+    Elements.At[I].Selected := True;;
+  for I := 0 to Lines.Size - 1 do
+    Lines.At[I].Selected := True;
+  for I := 0 to Texts.Size - 1 do
+    Texts.At[I].Selected := True;
+end;
+
+procedure TMainForm.ShowPanel;
+
+  procedure UpdateTWinControl(Sender: TWinControl);
+  begin
+    Sender.Tag := Sender.Tag xor ST_UPDATING;
+    Sender.Enabled := Sender.Tag <> ST_ERROR;
+  end;
+
+  procedure UpdateSpins;
+  begin
+    UpdateTWinControl(spinX);
+    UpdateTWinControl(spinY);
+    UpdateTWinControl(spinWidth);
+    UpdateTWinControl(spinHeigth);
+  end;
+
+var
+  I: Integer;
+begin
+  // UPDATE SPINS
+  spinX.Tag := ST_UNDEFINED or ST_UPDATING;
+  spinY.Tag := ST_UNDEFINED or ST_UPDATING;
+  spinWidth.Tag := ST_UNDEFINED or ST_UPDATING;
+  spinHeigth.Tag := ST_UNDEFINED or ST_UPDATING;
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        FillMainPropertiesPanel(Left, Top, Width, Heigth);
+  for I := 0 to Texts.Size - 1 do
+    with Texts.At[I] do
+      if Selected then
+        FillMainPropertiesPanel(Left, Top, Width, Heigth);
+  for I := 0 to Lines.Size - 1 do
+    if Lines.At[I].Selected then
+    begin
+      spinX.Tag :=  ST_ERROR or ST_UPDATING;
+      spinY.Tag :=  ST_ERROR or ST_UPDATING;
+      spinWidth.Tag :=  ST_ERROR or ST_UPDATING;
+      spinHeigth.Tag :=  ST_ERROR or ST_UPDATING;
+    end;
+  UpdateSpins;
+
+  // UPDATE TEXT
+  edtText.Tag := ST_UNDEFINED or ST_UPDATING;
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        FillTextPanel(Caption);
+  for I := 0 to Texts.Size - 1 do
+    with Texts.At[I] do
+      if Selected then
+        FillTextPanel(Caption);
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        FillTextPanel(Text.Caption);
+  UpdateTWinControl(edtText);
+
+  spinBorderWidth.Tag := ST_UNDEFINED or ST_UPDATING;
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        FillBorderPanel(Pen.Width);
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        FillBorderPanel(Pen.Width);
+  UpdateTWinControl(spinBorderWidth);
+end;
+
+procedure TMainForm.spinBorderWidthChange(Sender: TObject);
+var
+  I: Integer;
+  Tmp: TSpinEdit;
+begin
+  tmp := Sender as TSpinEdit;
+  if tmp.Tag and ST_UPDATING > 0 then
+    Exit;
+  if tmp.Tag = ST_ERROR then
+    Exit;
+
+  for I := 0 to Elements.Size - 1 do
+    with Elements.At[I] do
+      if Selected then
+        Pen.Width := tmp.Value;
+
+  for I := 0 to Lines.Size - 1 do
+    with Lines.At[I] do
+      if Selected then
+        Pen.Width := tmp.Value;
+  ClearWorkspace;
+  Redraw;
+end;
+
+procedure TMainForm.spinMainPropertiesChange(Sender: TObject);
+var
+  I: Integer;
+  Tmp: TSpinEdit;
+begin
+  if (Sender as TSpinEdit).Tag and ST_UPDATING > 0 then
+    Exit;
+  if (Sender as TSpinEdit).Tag = ST_ERROR then
+    Exit;
+
+  Tmp := Sender as TSpinEdit;
+  if Tmp.Name = spinX.Name then                 // spinX
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
+          SetPosition(spinX.Value, Top);
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+          SetPosition(spinX.Value, Top);
+  end else if Tmp.Name = spinY.Name then        // spinY
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
+          SetPosition(Left, spinY.Value);
+
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+          SetPosition(Left, spinY.Value);
+  end else if Tmp.Name = spinWidth.Name then    // spinWidth
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
+            SetSize(spinWidth.Value, Heigth);
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+            SetSize(spinWidth.Value, Heigth);
+  end else if Tmp.Name = spinHeigth.Name then   // spinHeigth
+  begin
+    for I := 0 to Elements.Size - 1 do
+      if Elements.At[I].Selected then
+        with Elements.At[I] do
+            SetSize(Width, spinHeigth.Value);
+    for I := 0 to Texts.Size - 1 do
+      if Texts.At[I].Selected then
+        with Texts.At[I] do
+            SetSize(Width, spinHeigth.Value);
+  end;
+  ClearWorkspace;
+  ReDraw;
+end;
+
+procedure TMainForm.toolButtonClick(Sender: TObject);
+begin
+  CurrentTool := TTools((Sender as TToolButton).Tag);
+end;
+
+procedure TMainForm.UpdateResolution;
+begin
+  Workspace.Width := ImageWidth;
+  Workspace.Height := ImageHeigth;
+  Workspace.Picture.Bitmap.Width := ImageWidth;
+  Workspace.Picture.Bitmap.Height := ImageHeigth;
+  ClearWorkspace;
+  ReDraw;
+end;
+
+function GetPoint(Sender: TConnector): TPoint;
+begin
+  if Sender.BindToElement then Result := Sender.Element.GetCenter
+  else Result := Sender.Pos;
+end;
+
+procedure TMainForm.WorkspaceMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+var
+  I: Integer;
+  StP, FnP: TPoint;
+begin
+  case CurrentTool of
+    toolMouse:
+      begin
+        ElementTmp := IsClickedElements(X, Y);
+        LineTmp := IsClickedLines(X, Y);
+        TextTmp := IsClickedTexts(X, Y);
+        ConnectorTmp := nil;
+        if (Button = mbLeft) then
+        begin
+          StartPoint.Create(X, Y);
+
+          if Assigned(LineTmp) then
+          begin
+            SelectionState := LineTmp.Selected;
+          end
+          else if Assigned(ElementTmp) then
+          begin
+            SelectionState := ElementTmp.Selected;
+          end
+          else if Assigned(TextTmp) then
+          begin
+            SelectionState := TextTmp.Selected;
+          end;
+
+          if not(ssCtrl in Shift) and not(SelectionState) then
+            DeselectAll;
+
+          if Assigned(LineTmp) then
+          begin
+            StP := GetPoint(LineTmp.Start);
+            FnP := GetPoint(LineTmp.Finish);
+            if (Abs(X - StP.X) < 3 + LineTmp.Pen.Width) and (Abs(Y - StP.Y) < 3 + LineTmp.Pen.Width) then
+              ConnectorTmp := @LineTmp.Start
+            else if (Abs(X - FnP.X) < 3 + LineTmp.Pen.Width) and (Abs(Y - FnP.Y) < 3 + LineTmp.Pen.Width) then
+              ConnectorTmp := @LineTmp.Finish
+            else ConnectorTmp := nil;
+            if Assigned(ConnectorTmp) then
+              DeselectAll;
+            LineTmp.Selected := True;
+          end
+          else if Assigned(ElementTmp) then
+          begin
+            ElementTmp.Selected := True;
+          end
+          else if Assigned(TextTmp) then
+          begin
+            TextTmp.Selected := True;
+          end
+          else
+            DeselectAll;
+        end;
+      end;
+    toolLine:
+      begin
+        ElementTmp := IsClickedElements(X, Y);
+        StartPoint.Create(X, Y);
+      end;
+  end;
+end;
+
+procedure TMainForm.WorkspaceMouseMove(Sender: TObject; Shift: TShiftState;
+  X, Y: Integer);
+var
+  I: Integer;
+begin
+  StatusBar.Panels[1].Text := 'X: ' + IntToStr(X) + ' Y: ' + IntToStr(Y);
+  case CurrentTool of
+    toolMouse:
+      begin
+        if (ssLeft in Shift) and not Assigned(ConnectorTmp) then
+        begin
+          ClearWorkspace;
+          ReDraw;
+        end;
+        if ssLeft in Shift then
+        begin
+          if Assigned(ConnectorTmp) then
+          begin
+            ConnectorTmp^.BindToElement := False;
+            ConnectorTmp^.Pos.Create(X, Y);
+            ClearWorkspace;
+            ReDraw;
+          end
+          else
+          begin
+            for I := Elements.Size - 1 downto 0 do
+            begin
+              if Elements.At[I].Selected then
+                ElementOnMove(Elements.At[I], X - StartPoint.X, Y - StartPoint.Y);
+            end;
+            for I := Texts.Size - 1 downto 0 do
+            begin
+              if Texts.At[I].Selected then
+                TextOnMove(Texts.At[I], X - StartPoint.X, Y - StartPoint.Y);
+            end;
+          end;
+        end;
+      end;
+
+  end;
+end;
+
+procedure TMainForm.WorkspaceMouseUp(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+var
+  I: Integer;
+begin
+  case CurrentTool of
+    toolMouse:
+      begin
+        if (Button = mbLeft) then
+        begin
+          if (StartPoint.X = X) and (StartPoint.Y = Y) then
+          begin
+            if not(ssCtrl in Shift) then
+              DeselectAll;
+            if Assigned(ElementTmp) then
+              ElementTmp.Selected := not SelectionState
+            else if Assigned(LineTmp) then
+              LineTmp.Selected := not SelectionState
+            else if Assigned(TextTmp) then
+              TextTmp.Selected := not SelectionState;
+          end
+          else
+          begin
+            if Assigned(ConnectorTmp) then
+            begin
+              ElementTmp := IsClickedElements(X, Y);
+              if Assigned(ElementTmp) and not (ssAlt in Shift) then
+              begin
+                ConnectorTmp^.BindToElement := True;
+                ConnectorTmp^.Element := ElementTmp;
+              end
+              else
+              begin
+                ConnectorTmp^.BindToElement := False;
+                ConnectorTmp^.Pos.Create(X, Y);
+              end;
+            end
+            else
+            begin
+              for I := Elements.Size - 1 downto 0 do
+                if Elements.At[I].Selected then
+                  Elements.At[I].Move(X - StartPoint.X, Y - StartPoint.Y);
+              for I := Texts.Size - 1 downto 0 do
+                if Texts.At[I].Selected then
+                  Texts.At[I].Move(X - StartPoint.X, Y - StartPoint.Y);
+            end;
+          end;
+        end;
+      end;
+    toolRectangle:
+      AddRectangle(X, Y);
+    toolEllipse:
+      AddEllipse(X, Y);
+    toolCircle:
+      AddCircle(X, Y);
+    toolText:
+      AddText(X, Y);
+    toolLine:
+      begin
+        DeselectAll;
+        LineTmp := TLine.Create;
+        LineTmp.Canvas := Workspace.Canvas;
+        LineTmp.Selected := True;
+        if Assigned(ElementTmp) then
+        begin
+          LineTmp.FStart.BindToElement := True;
+          LineTmp.FStart.Element := ElementTmp;
+        end
+        else
+        begin
+          LineTmp.FStart.BindToElement := False;
+          LineTmp.FStart.Pos := StartPoint;
+        end;
+        ElementTmp := IsClickedElements(X, Y);
+        if Assigned(ElementTmp) then
+        begin
+          LineTmp.FFinish.BindToElement := True;
+          LineTmp.FFinish.Element := ElementTmp;
+        end
+        else
+        begin
+          LineTmp.FFinish.BindToElement := False;
+          LineTmp.FFinish.Pos.Create(X, Y);
+        end;
+        Lines.PushBack(LineTmp);
+      end;
+
+  end;
+  ClearWorkspace;
+  ReDraw;
+  ShowPanel;
+end;
+
+initialization
+
+end.

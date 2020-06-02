@@ -5,8 +5,11 @@ interface
 type
   TVector<T> = class
   private
+    // Массив данных
     FData: array of T;
+    // Используемый размер
     FDataSize: Integer;
+    // Зарезервированный размер
     FReservedSize: Integer;
 
     function ReadAt(const Ind: Integer): T;
@@ -16,18 +19,26 @@ type
     constructor Create;
     destructor Destroy;
 
+    // Получение первого элемента
     function Front: T;
+    // Получение последнего элемента
     function Back: T;
+    // Удаление из массива
     procedure Erase(const Id: Integer);
-
+    // Добавление в конец массива
     procedure PushBack(const X: T);
 
+    // Получение размера массива
     function Size: Integer;
+    // Пустой ли массив?
     function Empty: Boolean;
 
+    // Очистка массива
     procedure Clear;
+    // Зарезервировать X ячеек массива
     procedure Reserve(const X: Integer);
 
+    // Доступ к элементу массива
     property At[const Index: Integer]: T read ReadAt write WriteAt;
   end;
 

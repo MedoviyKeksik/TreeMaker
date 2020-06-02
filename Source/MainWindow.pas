@@ -11,6 +11,7 @@ uses
   Vcl.ActnColorMaps, Vcl.Samples.Spin;
 
 const
+  // Константы состояний контролов
   ST_ALL_OK = 0;
   ST_DIFF_VALUES = 1;
   ST_UNDEFINED = 2;
@@ -18,10 +19,9 @@ const
   ST_UPDATING = 4;
 
 type
+  // Инструменты
   TTools = (toolMouse, toolRectangle, toolEllipse, toolCircle, toolLine,
     toolText);
-
-  TPanels = (tplNone, tplRectangle, tplEllipse, tplCircle, tplLine, tplText);
 
   TMainForm = class(TForm)
     Menu: TMainMenu;
@@ -120,9 +120,7 @@ type
     procedure ActionListUpdate(Action: TBasicAction; var Handled: Boolean);
     procedure actEditDeleteUpdate(Sender: TObject);
   private
-    FFileName: TFileName;
-
-    ImageWidth, ImageHeigth: Integer;
+    ImageWidth, ImageHeigth: Integer; // Размеры документа
 
     TextTmp: TText;
     ElementTmp: TElement;
@@ -130,32 +128,34 @@ type
     ConnectorTmp: ^TConnector;
     SelectionState: Boolean;
 
-    CurrentTool: TTools;
-    StartPoint, FinishPoint, Delta: TPoint;
+    CurrentTool: TTools; // Текущий инструмент
+    StartPoint: TPoint; // Начальная точка (Точка нажима клавиши мыши)
 
-    Elements: TVector<TElement>;
-    Texts: TVector<TText>;
-    Lines: TVector<TLine>;
+    Elements: TVector<TElement>;  // Динамический массив элементов
+    Texts: TVector<TText>;        // Динамеческий массив текстов
+    Lines: TVector<TLine>;        // Динамический массив линий
 
-    function IsClickedAll(const X, Y: Integer): Boolean;
     function IsClickedElements(const X, Y: Integer): TElement;
     function IsClickedLines(const X, Y: Integer): TLine;
     function IsClickedTexts(const X, Y: Integer): TText;
 
     procedure SetDefaultsElement(Element: TElement);
 
+    // Добавление элементов
     procedure AddRectangle(const X, Y: Integer);
     procedure AddEllipse(const X, Y: Integer);
     procedure AddCircle(const X, Y: Integer);
     procedure AddText(const X, Y: Integer);
 
+    // Выделить все
     procedure SelectAll;
+    // Снять выделение
     procedure DeselectAll;
 
-    procedure ReDraw;
-    procedure ClearWorkspace;
+    procedure ReDraw;            // Перерисовка
+    procedure ClearWorkspace;    // Очистка рабочей области
 
-    procedure ShowPanel;
+    procedure ShowPanel;         // Обновление значений контролов
 
     procedure ClearMainPropertiesPanel;
     procedure FillMainPropertiesPanel(const X, Y, Width, Heigth: Integer);
@@ -178,6 +178,7 @@ uses
   Vcl.Imaging.jpeg,
   Vcl.Imaging.pngimage, uAbout;
 
+// Передвижение элемента
 procedure ElementOnMove(Sender: TObject; const X, Y: Integer);
 var
   Tmp: TElement;
@@ -188,6 +189,7 @@ begin
   Tmp.Free;
 end;
 
+// Передвижение текста
 procedure TextOnMove(Sender: TObject; const X, Y: Integer);
 var
   Tmp: TText;
@@ -198,6 +200,7 @@ begin
   Tmp.Free;
 end;
 
+// Обновление функций.
 procedure TMainForm.ActionListUpdate(Action: TBasicAction;
   var Handled: Boolean);
 begin
@@ -205,6 +208,7 @@ begin
   actEditDelete.Enabled := True;
 end;
 
+// Добавление элементов
 procedure TMainForm.AddCircle(const X, Y: Integer);
 var
   Element: TElement;
@@ -800,11 +804,6 @@ begin
   end;
 end;
 
-function TMainForm.IsClickedAll(const X, Y: Integer): Boolean;
-begin
-  Result := Assigned(IsClickedLines(X, Y)) or Assigned(IsClickedTexts(X, Y)) or
-    Assigned(IsClickedElements(X, Y));
-end;
 
 function TMainForm.IsClickedElements(const X, Y: Integer): TElement;
 var
@@ -1082,9 +1081,9 @@ begin
           begin
             StP := GetPoint(LineTmp.Start);
             FnP := GetPoint(LineTmp.Finish);
-            if (Abs(X - StP.X) < 6 + LineTmp.Pen.Width) and (Abs(Y - StP.Y) < 6 + LineTmp.Pen.Width) then
+            if (Abs(X - StP.X) < 3 + LineTmp.Pen.Width) and (Abs(Y - StP.Y) < 3 + LineTmp.Pen.Width) then
               ConnectorTmp := @LineTmp.Start
-            else if (Abs(X - FnP.X) < 6 + LineTmp.Pen.Width) and (Abs(Y - FnP.Y) < 6 + LineTmp.Pen.Width) then
+            else if (Abs(X - FnP.X) < 3 + LineTmp.Pen.Width) and (Abs(Y - FnP.Y) < 3 + LineTmp.Pen.Width) then
               ConnectorTmp := @LineTmp.Finish
             else ConnectorTmp := nil;
             if Assigned(ConnectorTmp) then
@@ -1103,22 +1102,10 @@ begin
             DeselectAll;
         end;
       end;
-    toolRectangle:
-      begin
-      end;
-    toolEllipse:
-      begin
-      end;
-    toolCircle:
-      begin
-      end;
     toolLine:
       begin
         ElementTmp := IsClickedElements(X, Y);
         StartPoint.Create(X, Y);
-      end;
-    toolText:
-      begin
       end;
   end;
 end;
