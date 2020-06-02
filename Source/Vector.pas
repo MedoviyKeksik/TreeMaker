@@ -27,6 +27,7 @@ type
 
     procedure Clear;
     procedure Reserve(const X: Integer);
+
     property At[const Index: Integer]: T read ReadAt write WriteAt;
   end;
 

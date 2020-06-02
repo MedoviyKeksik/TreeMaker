@@ -213,7 +213,7 @@ begin
   Element := TElement.Create;
   Element.Shape := stCircle;
   SetDefaultsElement(Element);
-  Element.SetSize(100, 100);
+  Element.SetSize(50, 50);
   Element.SetPosition(X - Element.Width shr 1, Y - Element.Heigth shr 1);
   Element.Draw;
   Elements.PushBack(Element);
@@ -248,13 +248,12 @@ end;
 procedure TMainForm.SetDefaultsElement(Element: TElement);
 begin
   Element.Canvas := Workspace.Canvas;
-  Element.SetSize(200, 100);
+  Element.SetSize(100, 50);
   Element.Font.Size := 10;
   Element.Caption := '';
   Element.Brush.Color := $C4C4C4;
   Element.Pen.Width := 2;
   Element.Selected := True;
-  Element.OnMove := ElementOnMove;
 end;
 
 procedure TMainForm.AddText(const X, Y: Integer);
@@ -264,7 +263,7 @@ begin
   DeselectAll;
   Tmp := TText.Create;
   Tmp.Selected := True;
-  Tmp.SetSize(200, 100);
+  Tmp.SetSize(100, 50);
   Tmp.SetPosition(X - Tmp.Width shr 1, Y - Tmp.Heigth shr 1);
   Tmp.Canvas := Workspace.Canvas;
   Tmp.Caption := '';
@@ -606,61 +605,90 @@ end;
 procedure TMainForm.actFileSaveAsAccept(Sender: TObject);
 
   procedure SaveBMP(const FileName: TFileName);
+  var
+    Res: Integer;
   begin
-    Workspace.Picture.SaveToFile(FileName);
+    Res := mrOk;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
+
+    if Res = mrOk then
+      Workspace.Picture.SaveToFile(FileName);
   end;
 
   procedure SaveJPEG(const FileName: TFileName);
   var
     imJPEG: TJpegImage;
+    Res: Integer;
   begin
-    imJpeg := TJPEGImage.Create;
-    imJPEG.Assign(Workspace.Picture.Graphic);
-    imJPEG.SaveToFile(FileName);
+    Res := mrYes;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
+    if Res = mrYes then
+    begin
+      imJpeg := TJPEGImage.Create;
+      imJPEG.Assign(Workspace.Picture.Graphic);
+      imJPEG.SaveToFile(FileName);
+    end;
   end;
 
   procedure SavePNG(const FileName: TFileName);
   var
     imPNG: TPngImage;
+    Res: Integer;
   begin
-    imPNG := TPngImage.Create;
-    imPNG.Assign(Workspace.Picture.Graphic);
-    imPNG.SaveToFile(FileName);
+    Res := mrYes;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
+    if Res = mrYes then
+    begin
+      imPNG := TPngImage.Create;
+      imPNG.Assign(Workspace.Picture.Graphic);
+      imPNG.SaveToFile(FileName);
+    end;
   end;
 
   procedure SaveTMF(const FileName: TFileName);
   var
     fsFile: TFileStream;
     N, I: Integer;
+    Res: Integer;
   begin
-    fsFile := TFileStream.Create(FileName, fmCreate);
+    Res := mrYes;
+    if FileExists(FileName) then
+      Res := MessageDlg('Файл существует. Перезаписать?', mtConfirmation, mbYesNoCancel, 0);
 
-    // ImageSize
-    fsFile.Write(ImageWidth, SizeOf(ImageWidth));
-    fsFile.Write(ImageHeigth, SizeOf(ImageHeigth));
-
-    // Elements
-    N := Elements.Size;
-    fsFile.Write(N, SizeOf(N));
-    for I := 0 to Elements.Size - 1 do
+    if Res = mrYes then
     begin
-      Elements.At[I].Id := I;
-      Elements.At[I].WriteToFileStream(fsFile);
+      fsFile := TFileStream.Create(FileName, fmCreate);
+
+      // ImageSize
+      fsFile.Write(ImageWidth, SizeOf(ImageWidth));
+      fsFile.Write(ImageHeigth, SizeOf(ImageHeigth));
+
+      // Elements
+      N := Elements.Size;
+      fsFile.Write(N, SizeOf(N));
+      for I := 0 to Elements.Size - 1 do
+      begin
+        Elements.At[I].Id := I;
+        Elements.At[I].WriteToFileStream(fsFile);
+      end;
+
+      // Lines
+      N := Lines.Size;
+      fsFile.Write(N, SizeOf(N));
+      for I := 0 to Lines.Size - 1 do
+        Lines.At[I].WriteToFileStream(fsFile);
+
+      // Texts
+      N := Texts.Size;
+      fsFile.Write(N, SizeOf(N));
+      for I := 0 to Texts.Size - 1 do
+        Texts.At[I].WriteToFileStream(fsFile);
+
+      fsFile.Free;
     end;
-
-    // Lines
-    N := Lines.Size;
-    fsFile.Write(N, SizeOf(N));
-    for I := 0 to Lines.Size - 1 do
-      Lines.At[I].WriteToFileStream(fsFile);
-
-    // Texts
-    N := Texts.Size;
-    fsFile.Write(N, SizeOf(N));
-    for I := 0 to Texts.Size - 1 do
-      Texts.At[I].WriteToFileStream(fsFile);
-
-    fsFile.Free;
   end;
 
 var

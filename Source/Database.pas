@@ -10,7 +10,6 @@ uses
   SysUtils;
 
 type
-  TControlObjectProc = procedure(Sender: TObject; const X, Y: Integer);
 
   TControlObject = class
   protected
@@ -19,7 +18,6 @@ type
     FCanvas: TCanvas;
     FLeft, FTop: Integer;
     FWidth, FHeigth: Integer;
-    FOnResize, FOnMove: TControlObjectProc;
     procedure SetCanvas(ACanvas: TCanvas);
   public
     constructor Create; overLoad;
@@ -35,8 +33,6 @@ type
     property Top: Integer read FTop;
     property Width: Integer read FWidth;
     property Heigth: Integer read FHeigth;
-    property OnResize: TControlObjectProc read FOnResize write FOnResize;
-    property OnMove: TControlObjectProc read FOnMove write FOnMove;
     property Canvas: TCanvas read FCanvas write SetCanvas;
     property Visible: Boolean read FIsVisible write FIsVisible;
     property Selected: Boolean read FIsSelected write FIsSelected;

@@ -18,7 +18,7 @@ uses
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.Icon := Nil;
+  Application.Icon.LoadFromFile('TreeMaker.ico');
   Application.CreateForm(TMainForm, MainForm);
   Application.CreateForm(TformResolution, formResolution);
   Application.CreateForm(TfrmAbout, frmAbout);
