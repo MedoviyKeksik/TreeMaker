@@ -1,0 +1,954 @@
+unit Database;
+
+interface
+
+uses
+  Vcl.Graphics,
+  Vcl.ExtCtrls,
+  System.Types,
+  System.Classes,
+  SysUtils;
+
+type
+  TControlObject = class
+  protected
+    FId: Integer;
+    FIsVisible, FIsSelected: Boolean;
+    FCanvas: TCanvas;
+    FLeft, FTop: Integer;
+    FWidth, FHeigth: Integer;
+    procedure SetCanvas(ACanvas: TCanvas);
+  public
+    constructor Create; overLoad;
+    constructor Create(AObject: TControlObject); overload;
+    destructor Destroy;
+
+    procedure Assign(AObject: TControlObject; const AScale: Real = 1.0); overload;
+    procedure Assign(Aobject: TControlObject; const XScale: Real; const YScale: Real); overload;
+
+    procedure SetPosition(const X, Y: Integer);
+    procedure SetSize(const AWidth, AHeigth: Integer);
+
+    procedure Move(const DeltaX, DeltaY: Integer);
+
+    procedure DrawControls;
+    function GetCenter(AScale: Real = 1.0): TPoint;
+
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
+
+    property Id: Integer read FId write FId;
+    property Left: Integer read FLeft;
+    property Top: Integer read FTop;
+    property Width: Integer read FWidth;
+    property Heigth: Integer read FHeigth;
+    property Canvas: TCanvas read FCanvas write SetCanvas;
+    property Visible: Boolean read FIsVisible write FIsVisible;
+    property Selected: Boolean read FIsSelected write FIsSelected;
+  end;
+
+  TText = class(TControlObject)
+  private
+    FCaption: String;
+    FBrush: TBrush;
+    FFont: TFont;
+    FTextFormat: TTextFormat;
+  public
+    constructor Create; overload;
+    constructor Create(AObject: TText); overload;
+    destructor Destroy;
+    procedure Assign(AObject: TText; AScale: Real = 1.0); overload;
+    procedure Assign(AObject: TText; XScale: Real; YScale: Real); overload;
+    procedure Draw(AScale: Real = 1.0);
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
+    function IsInside(const X, Y: Integer): Boolean;
+    property Brush: TBrush read FBrush write FBrush;
+    property Caption: String read FCaption write FCaption;
+    property Font: TFont read FFont write FFont;
+    property TextFormat: TTextFormat read FTextFormat write FTextFormat;
+  end;
+
+  TElement = class(TControlObject)
+  private
+    FShape: TShapeType;
+    FBrush: TBrush;
+    FPen: TPen;
+    FCaption: String;
+    FFont: TFont;
+    FTextFormat: TTextFormat;
+  public
+    constructor Create; overload;
+    constructor Create(AObject: TElement); overload;
+    destructor Destroy;
+
+    procedure Assign(AObject: TElement; AScale: Real = 1.0); overload;
+    procedure Assign(AObject: TElement; XScale: Real; YScale: Real); overload;
+
+    function IsInside(const X, Y: Integer): Boolean;
+    procedure Draw(const AScale: Real = 1.0);
+
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
+
+    property Brush: TBrush read FBrush write FBrush;
+    property Caption: String read FCaption write FCaption;
+    property Font: TFont read FFont write FFont;
+    property TextFormat: TTextFormat read FTextFormat write FTextFormat;
+    property Pen: TPen read FPen write FPen;
+    property Shape: TShapeType read FShape write FShape;
+  end;
+
+  TConnector = record
+    procedure OffBind;
+    case BindToElement: Boolean of
+      True:
+        (Element: TElement);
+      False:
+        (Pos: TPoint);
+  end;
+
+  TLine = class
+  private
+    FText: TText;
+    FIsSelected: Boolean;
+    FPen: TPen;
+    FCanvas: TCanvas;
+    procedure SetCanvas(const ACanvas: TCanvas);
+  public
+    FStart, FFinish: TConnector;
+    constructor Create;
+    destructor Destroy;
+
+    procedure Assign(AObject: TLine; AScale: Real = 1.0); overload;
+    procedure Assign(AObject: TLine; XScale: Real; YScale: Real); overload;
+
+    procedure Draw(AScale: Real = 1.0);
+    procedure ReadFromFileStream(FileStream: TFileStream);
+    procedure WriteToFileStream(FileStream: TFileStream);
+    function IsInside(const X, Y: Integer): Boolean;
+
+    property Text: TText read FText write FText;
+    property Selected: Boolean read FIsSelected write FIsSelected;
+    property Pen: TPen read FPen write FPen;
+    property Canvas: TCanvas read FCanvas write SetCanvas;
+
+    property Start: TConnector read FStart write FStart;
+    property Finish: TConnector read FFinish write FFinish;
+  end;
+
+implementation
+
+uses
+  MainWindow;
+
+var
+  TmpElement: TElement;
+  TmpLine: TLine;
+  TmpText: TText;
+
+const
+  DefaultTextFormat: TTextFormat = [tfNoClip, tfWordBreak];
+
+  { TLine }
+
+function Min(const a, b: Real): Real; overload;
+begin
+  Result := a;
+  if a > b then Result := b;
+end;
+
+procedure TLine.Assign(AObject: TLine; XScale, YScale: Real);
+begin
+  FText.Assign(AObject.Text);
+  FPen.Assign(AObject.Pen);
+  FPen.Width := Round(FPen.Width * Min(XScale, YScale));
+  FIsSelected := AObject.Selected;
+  FStart := AObject.Start;
+  FFinish := AObject.Finish;
+  FCanvas := AObject.Canvas;
+  if not FStart.BindToElement then
+  begin
+    FStart.Pos.X := Round(FStart.Pos.X * XScale);
+    FStart.Pos.Y := Round(FStart.Pos.Y * YScale);
+  end;
+  if not FFinish.BindToElement then
+  begin
+    FFinish.Pos.X := Round(FFinish.Pos.X * XScale);
+    FFinish.Pos.Y := Round(FFinish.Pos.Y * YScale);
+  end;
+end;
+
+procedure TLine.Assign(AObject: TLine; AScale: Real);
+begin
+  FText.Assign(AObject.Text);
+  FPen.Assign(AObject.Pen);
+  FPen.Width := Round(FPen.Width * AScale);
+  FIsSelected := AObject.Selected;
+  FStart := AObject.Start;
+  FFinish := AObject.Finish;
+  FCanvas := AObject.Canvas;
+  if not FStart.BindToElement then
+  begin
+    FStart.Pos.X := Round(FStart.Pos.X * AScale);
+    FStart.Pos.Y := Round(FStart.Pos.Y * AScale);
+  end;
+  if not FFinish.BindToElement then
+  begin
+    FFinish.Pos.X := Round(FFinish.Pos.X * AScale);
+    FFinish.Pos.Y := Round(FFinish.Pos.Y * AScale);
+  end;
+end;
+
+constructor TLine.Create;
+begin
+  FText := TText.Create;
+  FText.FCaption := '';
+  FPen := TPen.Create;
+end;
+
+destructor TLine.Destroy;
+begin
+  FText.Free;
+  FPen.Free;
+  Inherited;
+end;
+
+procedure TLine.Draw;
+const
+  DotSize = 3;
+
+  procedure DrawDot(const P: TPoint);
+  begin
+    FCanvas.Brush.Color := clBlue;
+    FCanvas.Rectangle(P.X - DotSize, P.Y - DotSize, P.X + DotSize,
+      P.Y + DotSize);
+  end;
+
+var
+  StartPoint, FinishPoint: TPoint;
+  Size: Integer;
+begin
+  TmpLine.Assign(Self, AScale);
+  with TmpLine do
+  begin
+    case FStart.BindToElement of
+      True:
+        StartPoint := FStart.Element.GetCenter(AScale);
+      False:
+        StartPoint := FStart.Pos;
+    end;
+    FCanvas.MoveTo(StartPoint.X, StartPoint.Y);
+    FCanvas.Pen := FPen;
+    case FFinish.BindToElement of
+      True:
+        FinishPoint := FFinish.Element.GetCenter(AScale);
+      False:
+        FinishPoint := FFinish.Pos;
+    end;
+    FCanvas.LineTo(FinishPoint.X, FinishPoint.Y);
+
+    if FIsSelected then
+    begin
+      FCanvas.Pen.Color := clBlue;
+      FCanvas.Pen.Width := 2;
+      FCanvas.LineTo(StartPoint.X, StartPoint.Y);
+      DrawDot(StartPoint);
+      DrawDot(FinishPoint);
+    end;
+    FCanvas.Brush.Style := bsClear;
+
+    FCanvas.Font := FText.Font;
+  Size := FCanvas.TextWidth(FText.Caption);
+
+  FText.FLeft   := StartPoint.X;
+  FText.FTop    := StartPoint.Y;
+  FText.FWidth  := FinishPoint.X - StartPoint.X;
+  FText.FHeigth := FinishPoint.Y - StartPoint.Y;
+
+  if FText.Width < Size then
+  begin
+    FText.FLeft := FText.Left - (Size - FText.Width) shr 1;
+    FText.FWidth := Size;
+  end;
+
+  FText.Draw(AScale);
+  end;
+
+end;
+
+function TLine.IsInside(const X, Y: Integer): Boolean;
+const
+  threshold = 5;
+var
+  A, B, C: Integer;
+  P, Q: TPoint;
+  tmp: Real;
+begin
+  if FStart.BindToElement then
+    P := FStart.Element.GetCenter
+  else
+    P := FStart.Pos;
+
+  if FFinish.BindToElement then
+    Q := FFinish.Element.GetCenter
+  else
+    Q := FFinish.Pos;
+
+  A := P.Y - Q.Y;
+  B := Q.X - P.X;
+  C := -A * P.X - B * P.Y;
+
+  if (A = 0) and (B = 0) then
+    Result := False
+  else
+    Result := Abs(A * X + B * Y + C) / Sqrt(Sqr(A) + Sqr(B)) < threshold;
+end;
+
+procedure TLine.ReadFromFileStream(FileStream: TFileStream);
+
+  procedure ReadConnector(var Connector: TConnector);
+  begin
+    FileStream.Read(Connector.BindToElement, SizeOf(Connector.BindToElement));
+    if Connector.BindToElement then
+      FileStream.Read(Connector.Element, SizeOf(Integer))
+    else
+      FileStream.Read(Connector.Pos, SizeOf(Connector.Pos));
+  end;
+
+var
+  Color: TColor;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+begin
+  FText.ReadFromFileStream(FileStream);
+
+  // Pen
+  FileStream.Read(Color, SizeOf(Color));
+  FPen.Color := Color;
+
+  FileStream.Read(PenWidth, SizeOf(PenWidth));
+  FPen.Width := PenWidth;
+
+  FileStream.Read(PenStyle, SizeOf(PenStyle));
+  FPen.Style := PenStyle;
+
+  FileStream.Read(PenMode, SizeOf(PenMode));
+  FPen.Mode := PenMode;
+
+  ReadConnector(FStart);
+  ReadConnector(FFinish);
+end;
+
+procedure TLine.SetCanvas(const ACanvas: TCanvas);
+begin
+  Self.FCanvas := ACanvas;
+  FText.Canvas := ACanvas;
+end;
+
+procedure TLine.WriteToFileStream(FileStream: TFileStream);
+
+  procedure WriteConnector(const Connector: TConnector);
+  begin
+    FileStream.Write(Connector.BindToElement, SizeOf(Connector.BindToElement));
+    if Connector.BindToElement then
+      FileStream.Write(Connector.Element.Id, SizeOf(Connector.Element.Id))
+    else
+      FileStream.Write(Connector.Pos, SizeOf(Connector.Pos));
+  end;
+
+var
+  Color: TColor;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+begin
+  FText.WriteToFileStream(FileStream);
+
+  // Pen
+  Color := FPen.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  PenWidth := FPen.Width;
+  FileStream.Write(PenWidth, SizeOf(PenWidth));
+
+  PenStyle := FPen.Style;
+  FileStream.Write(PenStyle, SizeOf(PenStyle));
+
+  PenMode := FPen.Mode;
+  FileStream.Write(PenMode, SizeOf(PenMode));
+
+  WriteConnector(FStart);
+  WriteConnector(FFinish);
+end;
+
+{ TText }
+
+constructor TText.Create;
+begin
+  FBrush := TBrush.Create;
+  FFont := TFont.Create;
+  FTextFormat := DefaultTextFormat;
+  FCaption := '';
+end;
+
+procedure TText.Assign(AObject: TText; AScale: Real);
+begin
+  Inherited Assign(AObject, AScale);
+  FCaption := AObject.Caption;
+  FBrush.Assign(AObject.Brush);
+  FFont.Assign(AObject.Font);
+  FFont.Height := Round(FFont.Height * AScale);
+  FTextFormat := AObject.TextFormat;
+end;
+
+procedure TText.Assign(AObject: TText; XScale, YScale: Real);
+begin
+  Inherited Assign(AObject, XScale, YScale);
+  FCaption := AObject.Caption;
+  FBrush.Assign(AObject.Brush);
+  FFont.Assign(AObject.Font);
+  FFont.Size := Round(FFont.Size * Min(XScale, YScale));
+  FTextFormat := AObject.TextFormat;
+end;
+
+constructor TText.Create(AObject: TText);
+begin
+  Inherited Create(AObject);
+  FCaption := AObject.Caption;
+  FBrush := TBrush.Create;
+  FFont := TFont.Create;
+  FBrush.Assign(AObject.Brush);
+  FFont.Assign(AObject.Font);
+  FTextFormat := AObject.TextFormat;
+end;
+
+destructor TText.Destroy;
+begin
+  FFont.Destroy;
+  Inherited;
+end;
+
+procedure TText.Draw;
+var
+  Rect: TRect;
+  tfCalc: TTextFormat;
+begin
+  with TmpText do
+  begin
+    Assign(Self, AScale);
+    tfCalc := FTextFormat;
+    Include(tfCalc, tfCalcRect);
+    Rect.Create(FLeft, FTop + FHeigth shr 1, FLeft + FWidth,
+      FTop + FHeigth shr 1);
+    FCanvas.TextRect(Rect, FCaption, tfCalc);
+
+    if Rect.Width <= FWidth then
+      Rect.Create(FLeft + (FWidth - Rect.Width) shr 1,
+        FTop + (FHeigth - Rect.Height) shr 1, FLeft + (FWidth + Rect.Width) shr 1,
+        FTop + (FHeigth + Rect.Height) shr 1)
+    else
+      Rect.Create(FLeft, FTop + (FHeigth - Rect.Height) shr 1, FLeft + FWidth,
+        FTop + (FHeigth + Rect.Height) shr 1);
+
+    FCanvas.Font := FFont;
+    FCanvas.Brush := FBrush;
+    FCanvas.TextRect(Rect, FCaption, FTextFormat);
+
+    if FIsSelected then
+    begin
+      FCanvas.Brush.Style := bsClear;
+      FCanvas.Pen.Color := clBlue;
+      Rect.Create(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+      FCanvas.Rectangle(Rect);
+    end;
+  end;
+end;
+
+function TText.IsInside(const X, Y: Integer): Boolean;
+begin
+  Result := (X >= FLeft) and (Y >= FTop) and (X <= FLeft + FWidth) and
+    (Y <= FTop + FHeigth);
+end;
+
+procedure TText.ReadFromFileStream(FileStream: TFileStream);
+var
+  CaptionSize: Integer;
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  FontStyle: TFontStyles;
+  FontSize, Orientation: Integer;
+begin
+  Inherited;
+  // Caption
+  FileStream.Read(CaptionSize, SizeOf(CaptionSize));
+  SetLength(FCaption, CaptionSize);
+  FileStream.Read(Pointer(FCaption)^, CaptionSize * 2);
+  FileStream.Read(FTextFormat, SizeOf(FTextFormat));
+
+  // Brush
+  FileStream.Read(Color, SizeOf(Color));
+  FBrush.Color := Color;
+
+  FileStream.Read(BrushStyle, SizeOf(BrushStyle));
+  FBrush.Style := BrushStyle;
+
+  // Font
+  FileStream.Read(FontStyle, SizeOf(FontStyle));
+  FFont.Style := FontStyle;
+
+  FileStream.Read(FontSize, SizeOf(FontSize));
+  FFont.Size := FontSize;
+
+  FileStream.Read(Color, SizeOf(Color));
+  FFont.Color := Color;
+
+  FileStream.Read(Orientation, SizeOf(Orientation));
+  FFont.Orientation := Orientation;
+end;
+
+procedure TText.WriteToFileStream(FileStream: TFileStream);
+var
+  CaptionLength: Integer;
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  FontStyle: TFontStyles;
+  FontSize, Orientation: Integer;
+begin
+  Inherited;
+  // Caption
+  CaptionLength := Length(FCaption);
+  FileStream.Write(CaptionLength, SizeOf(CaptionLength));
+  FileStream.Write(Pointer(FCaption)^, CaptionLength * 2);
+  FileStream.Write(FTextFormat, SizeOf(FTextFormat));
+
+  // Brush
+  Color := FBrush.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  BrushStyle := Brush.Style;
+  FileStream.Write(BrushStyle, SizeOf(BrushStyle));
+
+  // Font
+  FontStyle := FFont.Style;
+  FileStream.Write(FontStyle, SizeOf(FontStyle));
+
+  FontSize := FFont.Size;
+  FileStream.Write(FontSize, SizeOf(FontSize));
+
+  Color := FFont.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  Orientation := FFont.Orientation;
+  FileStream.Write(Orientation, SizeOf(Orientation));
+end;
+
+{ TElement }
+
+constructor TElement.Create;
+begin
+  Inherited;
+  FTextFormat := DefaultTextFormat;
+  FFont       := TFont.Create;
+  FBrush      := TBrush.Create;
+  FPen        := TPen.Create;
+end;
+
+procedure TElement.Assign(AObject: TElement; AScale: Real = 1.0);
+begin
+  Inherited Assign(AObject, AScale);
+  FShape      := AObject.Shape;
+  FCaption    := AObject.Caption;
+  FFont.Assign(AObject.Font);
+  FFont.Height  := Round(FFont.Height * AScale);
+  FBrush.Assign(AObject.Brush);
+  FPen.Assign(AObject.Pen);
+  FPen.Width  := Round(FPen.Width * AScale);
+  FTextFormat := AObject.TextFormat;
+end;
+
+procedure TElement.Assign(AObject: TElement; XScale, YScale: Real);
+begin
+  Inherited Assign(AObject, XScale, YScale);
+  FShape      := AObject.Shape;
+  FCaption    := AObject.Caption;
+  FFont.Assign(AObject.Font);
+//  FFont.Height  := Round(FFont.Height * AScale);
+  FBrush.Assign(AObject.Brush);
+  FPen.Assign(AObject.Pen);
+  FTextFormat := AObject.TextFormat;
+end;
+
+constructor TElement.Create(AObject: TElement);
+begin
+  Inherited Create(AObject);
+  FShape      := AObject.Shape;
+  FBrush      := TBrush.Create;
+  FBrush.Assign(AObject.Brush);
+  FCaption    := AObject.Caption;
+  FFont       := TFont.Create;
+  FFont.Assign(AObject.Font);
+  FPen        := TPen.Create;
+  FPen.Assign(AObject.Pen);
+  FTextFormat := AObject.TextFormat;
+end;
+
+destructor TElement.Destroy;
+begin
+  FFont.Free;
+  FBrush.Free;
+  FPen.Free;
+  Inherited;
+end;
+
+procedure TElement.Draw(const AScale: Real = 1.0);
+var
+  Rect: TRect;
+  tfCalc: TTextFormat;
+  Tmp: TElement;
+begin
+  if FIsVisible then
+  begin
+    with TmpElement do
+    begin
+      Assign(Self, AScale);
+
+      FCanvas.Pen := FPen;
+      FCanvas.Brush := FBrush;
+      FCanvas.Font := FFont;
+      case FShape of
+        stRectangle, stSquare:
+          Canvas.Rectangle(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+        // stRoundRect: ;
+        // stRoundSquare: ;
+        stEllipse, stCircle:
+          Canvas.Ellipse(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+      end;
+
+      tfCalc := FTextFormat;
+      Include(tfCalc, tfCalcRect);
+      Rect.Create(FLeft, FTop + FHeigth shr 1, FLeft + FWidth,
+        FTop + FHeigth shr 1);
+      Rect.Width := Rect.Width - FPen.Width - 3;
+      FCanvas.TextRect(Rect, FCaption, tfCalc);
+
+      if Rect.Width <= FWidth - FPen.Width - 3 then
+        Rect.Create(FLeft + (FWidth - Rect.Width) shr 1,
+          FTop + (FHeigth - Rect.Height) shr 1, FLeft + (FWidth + Rect.Width)
+          shr 1, FTop + (FHeigth + Rect.Height) shr 1)
+      else
+      begin
+        Rect.Create(FLeft, FTop + (FHeigth - Rect.Height) shr 1, FLeft + FWidth,
+          FTop + (FHeigth + Rect.Height) shr 1);
+        Rect.Left := Rect.Left + (FPen.Width shr 1) + 2;
+        Rect.Width := Rect.Width - FPen.Width - 3;
+      end;
+      FCanvas.Brush.Style := bsClear;
+      FCanvas.TextRect(Rect, FCaption, FTextFormat);
+
+      // Rect.Create(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);;
+      // FCanvas.TextRect(Rect, FCaption, FTextFormat);
+
+      if FIsSelected then
+      begin
+        FCanvas.Brush.Style := bsClear;
+        FCanvas.Pen.Color := clBlue;
+        FCanvas.Pen.Width := 3;
+        case FShape of
+          stRectangle, stSquare:
+            FCanvas.Rectangle(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+          // stRoundRect: ;
+          // stRoundSquare: ;
+          stEllipse, stCircle:
+            FCanvas.Ellipse(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+        end;
+      end;
+    end;
+  end;
+end;
+
+function TElement.IsInside(const X, Y: Integer): Boolean;
+
+  function IsInEllipse(const X, Y, a2, b2: Integer): Boolean;
+  begin
+    if (a2 = 0) or (b2 = 0) then
+      Result := False
+    else
+      Result := (Sqr(X) / Sqr(a2) + Sqr(Y) / Sqr(b2)) <= 0.25;
+  end;
+
+begin
+  case FShape of
+    stRectangle, stSquare:
+      Result := (X >= FLeft) and (Y >= FTop) and (X <= FLeft + FWidth) and
+        (Y <= FTop + FHeigth);
+    // stRoundRect: ;
+    // stRoundSquare: ;
+    stEllipse, stCircle:
+      Result := IsInEllipse(X - FLeft - (FWidth shr 1),
+        Y - FTop - (FHeigth shr 1), FWidth, FHeigth);
+  end;
+end;
+
+procedure TElement.ReadFromFileStream(FileStream: TFileStream);
+var
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+  FontStyle: TFontStyles;
+  FontSize: Integer;
+  Orientation: Integer;
+  CaptionSize: Integer;
+  CharSize: ^SmallInt;
+begin
+  Inherited;
+  FileStream.Read(FShape, SizeOf(FShape));
+
+  // Caption
+  FileStream.Read(CaptionSize, SizeOf(CaptionSize));
+  SetLength(FCaption, CaptionSize);
+  FileStream.Read(Pointer(FCaption)^, CaptionSize * 2);
+  FileStream.Read(FTextFormat, SizeOf(FTextFormat));
+
+  // Brush
+  FileStream.Read(Color, SizeOf(Color));
+  FBrush.Color := Color;
+
+  FileStream.Read(BrushStyle, SizeOf(BrushStyle));
+  FBrush.Style := BrushStyle;
+
+  // Pen
+  FileStream.Read(Color, SizeOf(Color));
+  FPen.Color := Color;
+
+  FileStream.Read(PenWidth, SizeOf(PenWidth));
+  FPen.Width := PenWidth;
+
+  FileStream.Read(PenStyle, SizeOf(PenStyle));
+  FPen.Style := PenStyle;
+
+  FileStream.Read(PenMode, SizeOf(PenMode));
+  FPen.Mode := PenMode;
+
+  // Font
+  FileStream.Read(FontStyle, SizeOf(FontStyle));
+  FFont.Style := FontStyle;
+
+  FileStream.Read(FontSize, SizeOf(FontSize));
+  FFont.Size := FontSize;
+
+  FileStream.Read(Color, SizeOf(Color));
+  FFont.Color := Color;
+
+  FileStream.Read(Orientation, SizeOf(Orientation));
+  FFont.Orientation := Orientation;
+end;
+
+procedure TElement.WriteToFileStream(FileStream: TFileStream);
+var
+  Color: TColor;
+  BrushStyle: TBrushStyle;
+  PenWidth: Integer;
+  PenStyle: TPenStyle;
+  PenMode: TPenMode;
+  FontStyle: TFontStyles;
+  FontSize: Integer;
+  Orientation: Integer;
+  CaptionLength: Integer;
+begin
+  Inherited;
+  FileStream.Write(FShape, SizeOf(FShape));
+
+  // Caption
+  CaptionLength := Length(FCaption);
+  FileStream.Write(CaptionLength, SizeOf(CaptionLength));
+  FileStream.Write(Pointer(FCaption)^, CaptionLength * 2);
+  FileStream.Write(FTextFormat, SizeOf(FTextFormat));
+
+  // Brush
+  Color := FBrush.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  BrushStyle := Brush.Style;
+  FileStream.Write(BrushStyle, SizeOf(BrushStyle));
+
+  // Pen
+  Color := FPen.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  PenWidth := FPen.Width;
+  FileStream.Write(PenWidth, SizeOf(PenWidth));
+
+  PenStyle := FPen.Style;
+  FileStream.Write(PenStyle, SizeOf(PenStyle));
+
+  PenMode := FPen.Mode;
+  FileStream.Write(PenMode, SizeOf(PenMode));
+
+  // Font
+  FontStyle := FFont.Style;
+  FileStream.Write(FontStyle, SizeOf(FontStyle));
+
+  FontSize := FFont.Size;
+  FileStream.Write(FontSize, SizeOf(FontSize));
+
+  Color := FFont.Color;
+  FileStream.Write(Color, SizeOf(Color));
+
+  Orientation := FFont.Orientation;
+  FileStream.Write(Orientation, SizeOf(Orientation));
+end;
+
+{ TControlObject }
+
+constructor TControlObject.Create;
+begin
+  FIsVisible := True;
+  Inherited;
+end;
+
+procedure TControlObject.Assign(AObject: TControlObject; const AScale: Real = 1.0);
+begin
+  Self.FIsVisible   := AObject.Visible;
+  Self.FIsSelected  := AObject.Selected;
+  Self.FCanvas      := AObject.Canvas;
+  Self.FLeft        := Round(AObject.Left * AScale);
+  Self.FTop         := Round(AObject.Top * AScale);
+  Self.FWidth       := Round(AObject.Width * AScale);
+  Self.FHeigth      := Round(AObject.Heigth * AScale);
+end;
+
+procedure TControlObject.Assign(Aobject: TControlObject; const XScale,
+  YScale: Real);
+begin
+  Self.FIsVisible   := AObject.Visible;
+  Self.FIsSelected  := AObject.Selected;
+  Self.FCanvas      := AObject.Canvas;
+  Self.FLeft        := Round(AObject.Left * XScale);
+  Self.FTop         := Round(AObject.Top * YScale);
+  Self.FWidth       := Round(AObject.Width * XScale);
+  Self.FHeigth      := Round(AObject.Heigth * YScale);
+end;
+
+constructor TControlObject.Create(AObject: TControlObject);
+begin
+  Self.FIsVisible   := AObject.Visible;
+  Self.FIsSelected  := False;
+  Self.FCanvas      := AObject.Canvas;
+  Self.FLeft        := AObject.Left;
+  Self.FTop         := AObject.Top;
+  Self.FWidth       := AObject.Width;
+  Self.FHeigth      := AObject.Heigth;
+end;
+
+destructor TControlObject.Destroy;
+begin
+  Inherited;
+end;
+
+procedure TControlObject.DrawControls;
+
+const
+  DotSize = 3;
+
+  procedure DrawDot(const X, Y: Integer);
+  begin
+    FCanvas.Rectangle(X - DotSize, Y - DotSize, X + DotSize, Y + DotSize);
+  end;
+
+begin
+  if FIsVisible then
+  begin
+    FCanvas.Brush.Style := bsClear;
+    FCanvas.Pen.Style := psDash;
+    FCanvas.Pen.Color := clBlue;
+    FCanvas.Rectangle(FLeft, FTop, FLeft + FWidth, FTop + FHeigth);
+    FCanvas.Brush.Style := bsSolid;
+    FCanvas.Brush.Color := clGreen;
+    FCanvas.Pen.Style := psSolid;
+    FCanvas.Pen.Color := clBlack;
+    DrawDot(FLeft, FTop); // 0
+    DrawDot(FLeft + FWidth shr 1, FTop); // 1
+    DrawDot(FLeft + FWidth, FTop); // 2
+    DrawDot(FLeft + FWidth, FTop + FHeigth shr 1); // 3
+    DrawDot(FLeft + FWidth, FTop + FHeigth); // 4
+    DrawDot(FLeft + FWidth shr 1, FTop + FHeigth); // 5
+    DrawDot(FLeft, FTop + FHeigth); // 6
+    DrawDot(FLeft, FTop + FHeigth shr 1); // 7
+  end;
+end;
+
+function TControlObject.GetCenter(AScale: Real = 1.0): TPoint;
+begin
+  Result.X := Round(FLeft * AScale) + Round(FWidth * AScale) shr 1;
+  Result.Y := Round(FTop * AScale) + Round(FHeigth * AScale) shr 1;
+end;
+
+procedure TControlObject.Move(const DeltaX, DeltaY: Integer);
+begin
+  Inc(FLeft, DeltaX);
+  Inc(FTop, DeltaY);
+end;
+
+procedure TControlObject.ReadFromFileStream(FileStream: TFileStream);
+begin
+  FileStream.Read(FId,      SizeOf(FId));
+  FileStream.Read(FLeft,    SizeOf(FLeft));
+  FileStream.Read(FTop,     SizeOf(FTop));
+  FileStream.Read(FWidth,   SizeOf(FWidth));
+  FileStream.Read(FHeigth,  SizeOf(FHeigth));
+end;
+
+procedure TControlObject.SetCanvas(ACanvas: TCanvas);
+begin
+  Self.FCanvas := ACanvas;
+end;
+
+procedure TControlObject.SetPosition(const X, Y: Integer);
+begin
+  FLeft := X;
+  FTop := Y;
+end;
+
+procedure TControlObject.SetSize(const AWidth, AHeigth: Integer);
+begin
+  FWidth := AWidth;
+  FHeigth := AHeigth;
+end;
+
+procedure TControlObject.WriteToFileStream(FileStream: TFileStream);
+begin
+  FileStream.Write(FId,     SizeOf(FId));
+  FileStream.Write(FLeft,   SizeOf(FLeft));
+  FileStream.Write(FTop,    SizeOf(FTop));
+  FileStream.Write(FWidth,  SizeOf(FWidth));
+  FileStream.Write(FHeigth, SizeOf(FHeigth));
+end;
+
+{ TConnector }
+
+procedure TConnector.OffBind;
+begin
+  if BindToElement then
+  begin
+    BindToElement := False;
+    Pos := Element.GetCenter;
+  end;
+end;
+
+initialization
+
+TmpElement := TElement.Create;
+TmpLine := TLine.Create;
+TmpText := TText.Create;
+
+finalization
+
+TmpElement.Free;
+TmpLine.Free;
+TmpText.Free;
+
+end.
