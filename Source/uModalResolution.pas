@@ -3,7 +3,8 @@ unit uModalResolution;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Samples.Spin;
 
 type
@@ -43,8 +44,8 @@ begin
   ModalResult := mrOk;
 end;
 
-function TformResolution.ChangeResolution(const AWidth,
-  AHeight: Integer): TModalResult;
+function TformResolution.ChangeResolution(const AWidth, AHeight: Integer)
+  : TModalResult;
 begin
   spinWidth.Value := AWidth;
   spinHeigth.Value := AHeight;

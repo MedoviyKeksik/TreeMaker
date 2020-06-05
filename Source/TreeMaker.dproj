@@ -100,11 +100,11 @@
         </DelphiCompile>
         <DCCReference Include="MainWindow.pas">
             <Form>,
-  ComplementedCanvas in &apos;ComplementedCanvas.pas&apos;,
-  Database in &apos;Database.pas&apos;,
-  Vector in &apos;Vector.pas&apos;;
+    ComplementedCanvas in &apos;ComplementedCanvas.pas&apos;,
+    Database in &apos;Database.pas&apos;,
+    Vector in &apos;Vector.pas&apos;;
 
-{$R *.res</Form>
+    {$R *.res</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Database.pas"/>

@@ -35,9 +35,5 @@ object frmAbout: TfrmAbout
     ParentFont = False
     ReadOnly = True
     TabOrder = 0
-    ExplicitLeft = 64
-    ExplicitTop = 80
-    ExplicitWidth = 225
-    ExplicitHeight = 97
   end
 end

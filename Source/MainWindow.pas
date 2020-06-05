@@ -199,7 +199,7 @@ var
   Tmp: TElement;
 begin
   Tmp := TElement.Create(Sender as TElement);
-//  Tmp.Assign((Sender as TElement), FScale);
+  // Tmp.Assign((Sender as TElement), FScale);
   Tmp.Selected := False;
   Tmp.SetPosition(Tmp.Left + X, Tmp.Top + Y);
   Tmp.Draw(FScale);
@@ -213,7 +213,7 @@ var
 begin
   Tmp := TText.Create(Sender as TText);
   Tmp.SetPosition(Tmp.Left + X, Tmp.Top + Y);
-//  Tmp.Selected := False;
+  // Tmp.Selected := False;
   Tmp.Draw(FScale);
   Tmp.Free;
 end;
@@ -613,17 +613,41 @@ procedure TMainForm.actFileOpenAccept(Sender: TObject);
 
 var
   OpenDialog: TOpenDialog;
+  Res: Integer;
+  Flag: Boolean;
 begin
-  OpenDialog := (Sender as TFileOpen).Dialog;
-  case OpenDialog.FilterIndex of
-    // 1: OpenBMP(ExtendWithExt(OpenDialog.FileName, '.bmp'));
-    // 2: OpenJPEG(ExtendWithExt(OpenDialog.FileName, '.jpg'));
-    // 3: OpenPNG(ExtendWithExt(OpenDialog.FileName, '.png'));
-    1:
-      OpenTMF(ExtendWithExt(OpenDialog.FileName, '.tmf'));
+  Flag := True;
+  if FChanges then
+  begin
+    Res := MessageDlg('Есть несохраненные изменения. Вы хотите сохранить?',
+      mtConfirmation, mbYesNoCancel, 0);
+    case Res of
+      mrYes:
+        begin
+          actFileSaveAs.Execute;
+          Flag := actFileSaveAs.ExecuteResult;
+        end;
+      mrNo:
+        Flag := True;
+      mrCancel:
+        Flag := False;
+    end;
   end;
-  ClearWorkspace;
-  ReDraw;
+
+  if Flag then
+  begin
+    OpenDialog := (Sender as TFileOpen).Dialog;
+    case OpenDialog.FilterIndex of
+      // 1: OpenBMP(ExtendWithExt(OpenDialog.FileName, '.bmp'));
+      // 2: OpenJPEG(ExtendWithExt(OpenDialog.FileName, '.jpg'));
+      // 3: OpenPNG(ExtendWithExt(OpenDialog.FileName, '.png'));
+      1:
+        OpenTMF(ExtendWithExt(OpenDialog.FileName, '.tmf'));
+    end;
+    FChanges := False;
+    ClearWorkspace;
+    ReDraw;
+  end;
 end;
 
 procedure TMainForm.actFileSaveAsAccept(Sender: TObject);
@@ -805,14 +829,14 @@ var
 begin
   if FChanges then
   begin
-    Res := MessageDlg('Есть несохраненные изменения. Вы хотите сохранить?', mtConfirmation,
-        mbYesNoCancel, 0);
+    Res := MessageDlg('Есть несохраненные изменения. Вы хотите сохранить?',
+      mtConfirmation, mbYesNoCancel, 0);
     case Res of
       mrYes:
-      begin
-        actFileSaveAS.Execute;
-        CanClose := actFileSaveAs.ExecuteResult;
-      end;
+        begin
+          actFileSaveAs.Execute;
+          CanClose := actFileSaveAs.ExecuteResult;
+        end;
       mrNo:
         CanClose := True;
       mrCancel:
@@ -942,7 +966,7 @@ procedure TMainForm.ScrollBoxMouseWheel(Sender: TObject; Shift: TShiftState;
 begin
   MousePos := ScreenToClient(Mouse.CursorPos);
   MousePos.X := MousePos.X - (Sender as TScrollBox).Left;
-  MousePos.Y := MousePos.Y - (Sender as TscrollBox).Top;
+  MousePos.Y := MousePos.Y - (Sender as TScrollBox).Top;
   if ssCtrl in Shift then
   begin
     UpdateScale(WheelDelta);
@@ -1155,10 +1179,14 @@ begin
   OldHeigth := Workspace.Height;
   NewWidth := Round(ImageWidth * FScale);
   NewHeigth := Round(ImageHeigth * FScale);
-  if PosX = -1 then ShiftP.X := ScrollBox.ClientWidth shr 1
-  else ShiftP.X := PosX;
-  if PosY = -1 then ShiftP.Y := ScrollBox.ClientHeight shr 1
-  else ShiftP.Y := PosY;
+  if PosX = -1 then
+    ShiftP.X := ScrollBox.ClientWidth shr 1
+  else
+    ShiftP.X := PosX;
+  if PosY = -1 then
+    ShiftP.Y := ScrollBox.ClientHeight shr 1
+  else
+    ShiftP.Y := PosY;
 
   FreezeP.X := ScrollBox.HorzScrollBar.Position - ScrollBox.ClientWidth + 100;
   FreezeP.Y := ScrollBox.VertScrollBar.Position - ScrollBox.ClientHeight + 100;
@@ -1189,8 +1217,10 @@ end;
 procedure TMainForm.UpdateScale(Delta: Integer);
 begin
   FScale := FScale + Delta / 500;
-  if FScale < 0.1 then FScale := 0.1;
-  if FScale > 5 then FScale := 5;
+  if FScale < 0.1 then
+    FScale := 0.1;
+  if FScale > 5 then
+    FScale := 5;
   tbScale.Tag := ST_UPDATING;
   tbScale.Position := Trunc(FScale * 100);
   tbScale.Tag := 0;
@@ -1315,7 +1345,6 @@ begin
           end;
         end;
       end;
-
   end;
 end;
 
@@ -1367,17 +1396,35 @@ begin
                 if Texts.At[I].Selected then
                   Texts.At[I].Move(X - StartPoint.X, Y - StartPoint.Y);
             end;
+
+            FChanges := True;
           end;
         end;
       end;
     toolRectangle:
-      AddRectangle(X, Y);
+      begin
+        AddRectangle(X, Y);
+
+        FChanges := True;
+      end;
     toolEllipse:
-      AddEllipse(X, Y);
+      begin
+        AddEllipse(X, Y);
+
+        FChanges := True;
+      end;
     toolCircle:
-      AddCircle(X, Y);
+      begin
+        AddCircle(X, Y);
+
+        FChanges := True;
+      end;
     toolText:
-      AddText(X, Y);
+      begin
+        AddText(X, Y);
+
+        FChanges := True;
+      end;
     toolLine:
       begin
         DeselectAll;
@@ -1406,10 +1453,11 @@ begin
           LineTmp.FFinish.Pos.Create(X, Y);
         end;
         Lines.PushBack(LineTmp);
+
+        FChanges := True;
       end;
 
   end;
-  FChanges := True;
   ClearWorkspace;
   ReDraw;
   ShowPanel;

@@ -3,14 +3,14 @@ program TreeMaker;
 uses
   Vcl.Forms,
   MainWindow in 'MainWindow.pas' {,
-  ComplementedCanvas in 'ComplementedCanvas.pas',
-  Database in 'Database.pas',
-  Vector in 'Vector.pas';
+    ComplementedCanvas in 'ComplementedCanvas.pas',
+    Database in 'Database.pas',
+    Vector in 'Vector.pas';
 
-{$R *.res},
+    {$R *.res} ,
   Database in 'Database.pas',
   Vector in 'Vector.pas',
-  uModalResolution in 'uModalResolution.pas' {formResolution},
+  uModalResolution in 'uModalResolution.pas' {formResolution} ,
   uAbout in 'uAbout.pas' {frmAbout};
 
 {$R *.res}
@@ -23,4 +23,5 @@ begin
   Application.CreateForm(TformResolution, formResolution);
   Application.CreateForm(TfrmAbout, frmAbout);
   Application.Run;
+
 end.

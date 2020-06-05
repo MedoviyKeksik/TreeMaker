@@ -23,8 +23,10 @@ type
     constructor Create(AObject: TControlObject); overload;
     destructor Destroy;
 
-    procedure Assign(AObject: TControlObject; const AScale: Real = 1.0); overload;
-    procedure Assign(Aobject: TControlObject; const XScale: Real; const YScale: Real); overload;
+    procedure Assign(AObject: TControlObject;
+      const AScale: Real = 1.0); overload;
+    procedure Assign(AObject: TControlObject; const XScale: Real;
+      const YScale: Real); overload;
 
     procedure SetPosition(const X, Y: Integer);
     procedure SetSize(const AWidth, AHeigth: Integer);
@@ -155,7 +157,8 @@ const
 function Min(const a, b: Real): Real; overload;
 begin
   Result := a;
-  if a > b then Result := b;
+  if a > b then
+    Result := b;
 end;
 
 procedure TLine.Assign(AObject: TLine; XScale, YScale: Real);
@@ -181,7 +184,7 @@ end;
 
 procedure TLine.Assign(AObject: TLine; AScale: Real);
 begin
-  FText.Assign(AObject.Text);
+  FText.Assign(AObject.Text, AScale);
   FPen.Assign(AObject.Pen);
   FPen.Width := Round(FPen.Width * AScale);
   FIsSelected := AObject.Selected;
@@ -259,20 +262,20 @@ begin
     FCanvas.Brush.Style := bsClear;
 
     FCanvas.Font := FText.Font;
-  Size := FCanvas.TextWidth(FText.Caption);
+    Size := FCanvas.TextWidth(FText.Caption);
 
-  FText.FLeft   := StartPoint.X;
-  FText.FTop    := StartPoint.Y;
-  FText.FWidth  := FinishPoint.X - StartPoint.X;
-  FText.FHeigth := FinishPoint.Y - StartPoint.Y;
+    FText.FLeft := StartPoint.X;
+    FText.FTop := StartPoint.Y;
+    FText.FWidth := FinishPoint.X - StartPoint.X;
+    FText.FHeigth := FinishPoint.Y - StartPoint.Y;
 
-  if FText.Width < Size then
-  begin
-    FText.FLeft := FText.Left - (Size - FText.Width) shr 1;
-    FText.FWidth := Size;
-  end;
+    if FText.Width < Size then
+    begin
+      FText.FLeft := FText.Left - (Size - FText.Width) shr 1;
+      FText.FWidth := Size;
+    end;
 
-  FText.Draw(AScale);
+    FText.Draw;
   end;
 
 end;
@@ -280,8 +283,23 @@ end;
 function TLine.IsInside(const X, Y: Integer): Boolean;
 const
   threshold = 5;
+
+  function Max(a, b: Integer): Integer;
+  begin
+    Result := a;
+    if a < b then
+      Result := b;
+  end;
+
+  function Min(a, b: Integer): Integer;
+  begin
+    Result := a;
+    if a > b then
+      Result := b;
+  end;
+
 var
-  A, B, C: Integer;
+  a, b, C: Integer;
   P, Q: TPoint;
   tmp: Real;
 begin
@@ -295,14 +313,18 @@ begin
   else
     Q := FFinish.Pos;
 
-  A := P.Y - Q.Y;
-  B := Q.X - P.X;
-  C := -A * P.X - B * P.Y;
+  a := P.Y - Q.Y;
+  b := Q.X - P.X;
+  C := -a * P.X - b * P.Y;
 
-  if (A = 0) and (B = 0) then
+  if (a = 0) and (b = 0) then
     Result := False
+  else if (Min(P.X, Q.X) - threshold <= X) and (X <= Max(P.X, Q.X) + threshold)
+    and (Min(P.Y, Q.Y) - threshold <= Y) and (Y <= Max(P.Y, Q.Y) + threshold)
+  then
+    Result := Abs(a * X + b * Y + C) / Sqrt(Sqr(a) + Sqr(b)) < threshold
   else
-    Result := Abs(A * X + B * Y + C) / Sqrt(Sqr(A) + Sqr(B)) < threshold;
+    Result := False;
 end;
 
 procedure TLine.ReadFromFileStream(FileStream: TFileStream);
@@ -446,8 +468,8 @@ begin
 
     if Rect.Width <= FWidth then
       Rect.Create(FLeft + (FWidth - Rect.Width) shr 1,
-        FTop + (FHeigth - Rect.Height) shr 1, FLeft + (FWidth + Rect.Width) shr 1,
-        FTop + (FHeigth + Rect.Height) shr 1)
+        FTop + (FHeigth - Rect.Height) shr 1, FLeft + (FWidth + Rect.Width)
+        shr 1, FTop + (FHeigth + Rect.Height) shr 1)
     else
       Rect.Create(FLeft, FTop + (FHeigth - Rect.Height) shr 1, FLeft + FWidth,
         FTop + (FHeigth + Rect.Height) shr 1);
@@ -550,31 +572,31 @@ constructor TElement.Create;
 begin
   Inherited;
   FTextFormat := DefaultTextFormat;
-  FFont       := TFont.Create;
-  FBrush      := TBrush.Create;
-  FPen        := TPen.Create;
+  FFont := TFont.Create;
+  FBrush := TBrush.Create;
+  FPen := TPen.Create;
 end;
 
 procedure TElement.Assign(AObject: TElement; AScale: Real = 1.0);
 begin
   Inherited Assign(AObject, AScale);
-  FShape      := AObject.Shape;
-  FCaption    := AObject.Caption;
+  FShape := AObject.Shape;
+  FCaption := AObject.Caption;
   FFont.Assign(AObject.Font);
-  FFont.Height  := Round(FFont.Height * AScale);
+  FFont.Height := Round(FFont.Height * AScale);
   FBrush.Assign(AObject.Brush);
   FPen.Assign(AObject.Pen);
-  FPen.Width  := Round(FPen.Width * AScale);
+  FPen.Width := Round(FPen.Width * AScale);
   FTextFormat := AObject.TextFormat;
 end;
 
 procedure TElement.Assign(AObject: TElement; XScale, YScale: Real);
 begin
   Inherited Assign(AObject, XScale, YScale);
-  FShape      := AObject.Shape;
-  FCaption    := AObject.Caption;
+  FShape := AObject.Shape;
+  FCaption := AObject.Caption;
   FFont.Assign(AObject.Font);
-//  FFont.Height  := Round(FFont.Height * AScale);
+  // FFont.Height  := Round(FFont.Height * AScale);
   FBrush.Assign(AObject.Brush);
   FPen.Assign(AObject.Pen);
   FTextFormat := AObject.TextFormat;
@@ -583,13 +605,13 @@ end;
 constructor TElement.Create(AObject: TElement);
 begin
   Inherited Create(AObject);
-  FShape      := AObject.Shape;
-  FBrush      := TBrush.Create;
+  FShape := AObject.Shape;
+  FBrush := TBrush.Create;
   FBrush.Assign(AObject.Brush);
-  FCaption    := AObject.Caption;
-  FFont       := TFont.Create;
+  FCaption := AObject.Caption;
+  FFont := TFont.Create;
   FFont.Assign(AObject.Font);
-  FPen        := TPen.Create;
+  FPen := TPen.Create;
   FPen.Assign(AObject.Pen);
   FTextFormat := AObject.TextFormat;
 end;
@@ -606,7 +628,7 @@ procedure TElement.Draw(const AScale: Real = 1.0);
 var
   Rect: TRect;
   tfCalc: TTextFormat;
-  Tmp: TElement;
+  tmp: TElement;
 begin
   if FIsVisible then
   begin
@@ -810,38 +832,39 @@ begin
   Inherited;
 end;
 
-procedure TControlObject.Assign(AObject: TControlObject; const AScale: Real = 1.0);
+procedure TControlObject.Assign(AObject: TControlObject;
+  const AScale: Real = 1.0);
 begin
-  Self.FIsVisible   := AObject.Visible;
-  Self.FIsSelected  := AObject.Selected;
-  Self.FCanvas      := AObject.Canvas;
-  Self.FLeft        := Round(AObject.Left * AScale);
-  Self.FTop         := Round(AObject.Top * AScale);
-  Self.FWidth       := Round(AObject.Width * AScale);
-  Self.FHeigth      := Round(AObject.Heigth * AScale);
+  Self.FIsVisible := AObject.Visible;
+  Self.FIsSelected := AObject.Selected;
+  Self.FCanvas := AObject.Canvas;
+  Self.FLeft := Round(AObject.Left * AScale);
+  Self.FTop := Round(AObject.Top * AScale);
+  Self.FWidth := Round(AObject.Width * AScale);
+  Self.FHeigth := Round(AObject.Heigth * AScale);
 end;
 
-procedure TControlObject.Assign(Aobject: TControlObject; const XScale,
-  YScale: Real);
+procedure TControlObject.Assign(AObject: TControlObject;
+  const XScale, YScale: Real);
 begin
-  Self.FIsVisible   := AObject.Visible;
-  Self.FIsSelected  := AObject.Selected;
-  Self.FCanvas      := AObject.Canvas;
-  Self.FLeft        := Round(AObject.Left * XScale);
-  Self.FTop         := Round(AObject.Top * YScale);
-  Self.FWidth       := Round(AObject.Width * XScale);
-  Self.FHeigth      := Round(AObject.Heigth * YScale);
+  Self.FIsVisible := AObject.Visible;
+  Self.FIsSelected := AObject.Selected;
+  Self.FCanvas := AObject.Canvas;
+  Self.FLeft := Round(AObject.Left * XScale);
+  Self.FTop := Round(AObject.Top * YScale);
+  Self.FWidth := Round(AObject.Width * XScale);
+  Self.FHeigth := Round(AObject.Heigth * YScale);
 end;
 
 constructor TControlObject.Create(AObject: TControlObject);
 begin
-  Self.FIsVisible   := AObject.Visible;
-  Self.FIsSelected  := False;
-  Self.FCanvas      := AObject.Canvas;
-  Self.FLeft        := AObject.Left;
-  Self.FTop         := AObject.Top;
-  Self.FWidth       := AObject.Width;
-  Self.FHeigth      := AObject.Heigth;
+  Self.FIsVisible := AObject.Visible;
+  Self.FIsSelected := False;
+  Self.FCanvas := AObject.Canvas;
+  Self.FLeft := AObject.Left;
+  Self.FTop := AObject.Top;
+  Self.FWidth := AObject.Width;
+  Self.FHeigth := AObject.Heigth;
 end;
 
 destructor TControlObject.Destroy;
@@ -895,11 +918,11 @@ end;
 
 procedure TControlObject.ReadFromFileStream(FileStream: TFileStream);
 begin
-  FileStream.Read(FId,      SizeOf(FId));
-  FileStream.Read(FLeft,    SizeOf(FLeft));
-  FileStream.Read(FTop,     SizeOf(FTop));
-  FileStream.Read(FWidth,   SizeOf(FWidth));
-  FileStream.Read(FHeigth,  SizeOf(FHeigth));
+  FileStream.Read(FId, SizeOf(FId));
+  FileStream.Read(FLeft, SizeOf(FLeft));
+  FileStream.Read(FTop, SizeOf(FTop));
+  FileStream.Read(FWidth, SizeOf(FWidth));
+  FileStream.Read(FHeigth, SizeOf(FHeigth));
 end;
 
 procedure TControlObject.SetCanvas(ACanvas: TCanvas);
@@ -921,10 +944,10 @@ end;
 
 procedure TControlObject.WriteToFileStream(FileStream: TFileStream);
 begin
-  FileStream.Write(FId,     SizeOf(FId));
-  FileStream.Write(FLeft,   SizeOf(FLeft));
-  FileStream.Write(FTop,    SizeOf(FTop));
-  FileStream.Write(FWidth,  SizeOf(FWidth));
+  FileStream.Write(FId, SizeOf(FId));
+  FileStream.Write(FLeft, SizeOf(FLeft));
+  FileStream.Write(FTop, SizeOf(FTop));
+  FileStream.Write(FWidth, SizeOf(FWidth));
   FileStream.Write(FHeigth, SizeOf(FHeigth));
 end;
 
